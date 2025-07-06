@@ -66,7 +66,7 @@ git checkout -b feature/your-feature-name
 
 ```bash
 git add .
-git commit -m "Add: login page UI"
+git commit -m "commit message"
 git push origin feature/your-feature-name
 ```
 🔄 Step 6: Create a Pull Request (PR)
