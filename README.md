@@ -1,4 +1,4 @@
-# FIT2GO
+# FIT2GO 
 A Fitness and Nutrition tracking web application.
 ---
 ## 🚀 Tech Stack
