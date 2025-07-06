@@ -1,0 +1,21 @@
+header {
+    background: linear-gradient(to right, #6B48FF, #A855F7);
+    padding: 15px 20px;
+    border-radius: 8px 8px 0 0;
+  }
+  
+  .bg-purple {
+    background-color: #A855F7;
+  }
+  
+  .text-purple {
+    color: #A855F7;
+  }
+  
+  .text-orange {
+    color: #FF6B35;
+  }
+  
+  .progress-bar.bg-purple {
+    background-color: #A855F7;
+  }

@@ -1,0 +1,16 @@
+# Node modules (both backend and frontend)
+node_modules/
+fit2go-frontend/node_modules/
+
+# Environment variables
+*.env
+
+# Build folders if frontend is built
+fit2go-frontend/build/
+
+# Logs
+*.log
+
+# System files
+.DS_Store
+Thumbs.db

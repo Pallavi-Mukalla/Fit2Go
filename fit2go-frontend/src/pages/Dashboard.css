@@ -1,0 +1,79 @@
+.dashboard-container {
+  background: url('/src/homepage.jpg') no-repeat center center/cover;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+}
+
+.overlay {
+  background-color: rgba(0, 0, 0, 0.5);
+  height: 100%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+}
+
+.content {
+  display: flex;
+  justify-content: center;
+  gap: 0px; /* NO gap between cards */
+  max-width: 1000px;
+  width: 100%;
+}
+
+.card-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  margin: 0;
+}
+
+.glass-card {
+  background: rgba(232, 158, 158, 0.25);
+  border-radius: 1rem;
+  padding: 2rem;
+  width: 280px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  color: #fff;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  margin: 0;
+}
+
+/* Hover shadow */
+.glass-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 30px rgba(17, 252, 158, 0.4); 
+}
+
+/* Override for Fitness card to make it blue */
+.glass-card.fitness {
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: white;
+}
+
+/* Button styles */
+.custom-button {
+  background-color: transparent; /* Fully transparent initially */
+  color: #fff;
+  font-weight: 600;
+  padding: 0.7rem 1.5rem;
+  border: 2px solid #fff;
+  border-radius: 30px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+  backdrop-filter: blur(4px);
+}
+
+
+.custom-button:hover {
+  background: linear-gradient(135deg, #28a745, #218838); /* green hover */
+  box-shadow: 0 6px 18px rgba(40, 167, 69, 0.5);
+  border-color: transparent;
+}
+
