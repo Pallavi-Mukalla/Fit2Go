@@ -23,6 +23,7 @@ const SignUp = () => {
         password,
       });
       if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
         navigate('/login');
       }
     } catch (error) {

@@ -14,13 +14,7 @@ mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopol
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.log(err));
 
-const userSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-});
-
-const User = mongoose.model('User', userSchema);
+const User = require('./models/User');
 
 app.post('/signup', async (req, res) => {
   const { name, email, password } = req.body;
@@ -66,6 +60,26 @@ app.post('/login', async (req, res) => {
     res.status(500).json({ message: 'Server error during login', error: err.message });
   }
 });
+
+const auth = require('./middleware/auth');
+
+app.get('/profile', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).select('name email'); // select only fields you want to send
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // You can also add initials on the server side
+    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
+
+    res.json({ name: user.name, email: user.email, initials });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error while fetching profile', error: err.message });
+  }
+});
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

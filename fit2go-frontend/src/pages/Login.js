@@ -21,6 +21,7 @@ const Login = () => {
     const data = await response.json();
 
     if (response.ok) {
+      localStorage.setItem('token', data.token);
       // Login successful, redirect to the dashboard
       navigate('/dashboard');
     } else {

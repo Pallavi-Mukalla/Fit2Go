@@ -1,13 +1,44 @@
-import {Link, useState } from "react";
+import React, {Link,useEffect, useState } from "react";
 import "./Nutrition.css"; // Assuming you have a global CSS for all sections
 
 function Nutrition() {
   // State for Section 1
-  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [user, setUser] = useState(null);
+  const initials = user?.name
+  ? user.name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+  : '?';
 
-  const toggleChat = () => {
-    setIsChatOpen(!isChatOpen);
-  };
+  useEffect(() => {
+  async function fetchProfile() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const res = await fetch('http://localhost:5000/profile', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data);
+      } else {
+        console.error('Failed to fetch profile');
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  }
+
+  fetchProfile();
+}, []);
+
+
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Section 2 State
   const [isTooltipVisible, setIsTooltipVisible] = useState(false);
@@ -96,28 +127,17 @@ function Nutrition() {
         <div className="logo">Fit2Go</div>
         <nav className="nav">
           <ul>
-            <li><a href="#" className="active">Dashboard</a></li>
+            <li><a href="#">Dashboard</a></li>
             <li><a href="#">Nutrition</a></li>
             <li><a href="#">Workouts</a></li>
             <li><a href="#">Progress</a></li>
           </ul>
         </nav>
         <div className="user-profile">
-          <div className="chat-icon" onClick={toggleChat}></div>
-          <div className="user-initials">JS</div>
-          <span>John Smith</span>
+          <div className="user-initials">{initials}</div>
+          <span>{user ? user.name : 'Guest'}</span>
+
         </div>
-        {isChatOpen && (
-          <div className="chat-window">
-            <div className="chat-header">
-              <h3>Chat Support</h3>
-              <button className="close-chat" onClick={toggleChat}>×</button>
-            </div>
-            <div className="chat-body">
-              <p>Chat support coming soon!</p>
-            </div>
-          </div>
-        )}
       </header>
 
       {/* Section 2: Today's Nutrition */}

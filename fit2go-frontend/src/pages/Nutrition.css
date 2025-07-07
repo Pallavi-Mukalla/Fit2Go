@@ -16,13 +16,21 @@
   color: #28a745;
 }
 
+/* Remove background and styling that creates the box */
+.nav {
+  background: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
 .nav ul {
-  list-style: none;
-  display: flex;
-  gap: 20px;
+  background: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
   margin: 0;
   padding: 0;
 }
+
 
 .nav a {
   text-decoration: none;
