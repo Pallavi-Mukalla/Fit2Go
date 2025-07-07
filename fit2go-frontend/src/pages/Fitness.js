@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 // CSS styles as a string
 const styles = `
@@ -318,20 +318,38 @@ const initialGoals = [
 ];
 
 // Header Component
-const Header = () => (
-  <header>
-    <div style={{ display: 'flex', alignItems: 'center' }}>
-      <svg style={{ width: '24px', height: '24px', marginRight: '8px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2-14H7a2 2 0 00-2 2v16a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2z"></path>
-      </svg>
-      <h1>FitTrack</h1>
-    </div>
-    <div className="user">
-      <span>Welcome, Alex</span>
-      <div className="avatar">A</div>
-    </div>
-  </header>
-);
+
+const Header = ({ user }) => {
+  // Compute initials safely
+  const initials = user?.name
+    ? user.name.split(' ').map(n => n[0]).join('').toUpperCase()
+    : '?';
+
+  return (
+    <header>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <svg style={{ width: '24px', height: '24px', marginRight: '8px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2-14H7a2 2 0 00-2 2v16a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2z"></path>
+        </svg>
+        <h1>FitTrack</h1>
+      </div>
+      <div className="user">
+        {user ? (
+          <>
+            <span>Welcome, {user.name.split(' ')[0]}</span>
+            <div className="avatar">{initials}</div>
+          </>
+        ) : (
+          <>
+            <span>Welcome</span>
+            <div className="avatar">?</div>
+          </>
+        )}
+      </div>
+    </header>
+  );
+};
+
 
 // Dashboard Stats Component
 const DashboardStats = ({ workouts, goals }) => {
@@ -685,10 +703,36 @@ const Fitness = () => {
   const [activeTab, setActiveTab] = useState("Progress Tracking");
   const [workouts, setWorkouts] = useState(initialWorkouts);
   const [goals, setGoals] = useState(initialGoals);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+  async function fetchProfile() {
+    const token = localStorage.getItem('token'); // Make sure you store the token at login
+    if (!token) return;
+
+    const res = await fetch('http://localhost:5000/profile', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      console.log('Profile data:', data);
+      setUser(data);
+    } else {
+      console.error('Failed to fetch profile');
+    }
+  }
+
+  fetchProfile();
+}, []);
+
 
   return (
     <div>
-      <Header />
+      <Header user={user} />
+
       <div className="container">
         <h2 className="dashboard-title">Your Fitness Dashboard</h2>
         <DashboardStats workouts={workouts} goals={goals} />
