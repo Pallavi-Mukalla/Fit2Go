@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 // CSS styles as a string
 const styles = `
@@ -325,6 +326,16 @@ const Header = ({ user }) => {
     ? user.name.split(' ').map(n => n[0]).join('').toUpperCase()
     : '?';
 
+  const navigate = useNavigate();
+  const [showDropdown, setShowDropdown] = useState(false);
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
+  const handleProfileClick = () => {
+    setShowDropdown((prev) => !prev);
+  };
+
   return (
     <header>
       <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -333,7 +344,7 @@ const Header = ({ user }) => {
         </svg>
         <h1>FitTrack</h1>
       </div>
-      <div className="user">
+      <div className="user" style={{ position: 'relative', cursor: 'pointer' }} onClick={handleProfileClick}>
         {user ? (
           <>
             <span>Welcome, {user.name.split(' ')[0]}</span>
@@ -344,6 +355,26 @@ const Header = ({ user }) => {
             <span>Welcome</span>
             <div className="avatar">?</div>
           </>
+        )}
+        {showDropdown && (
+          <div style={{ position: 'absolute', top: '100%', right: 0, background: 'white', border: '1px solid #ccc', borderRadius: '4px', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', zIndex: 10, minWidth: '120px', padding: '8px 0', display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}>
+            <span
+              style={{
+                padding: '10px 20px',
+                cursor: 'pointer',
+                color: '#333',
+                fontWeight: 500,
+                borderRadius: '4px',
+                transition: 'background 0.2s',
+                textAlign: 'left',
+              }}
+              onClick={e => { e.stopPropagation(); handleLogout(); }}
+              onMouseOver={e => e.currentTarget.style.background = '#f5f5f5'}
+              onMouseOut={e => e.currentTarget.style.background = 'white'}
+            >
+              Logout
+            </span>
+          </div>
         )}
       </div>
     </header>

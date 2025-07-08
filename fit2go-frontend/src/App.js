@@ -1,11 +1,17 @@
 import React from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/dashboard';
 import Fitness from './pages/Fitness';
 import Nutrition from './pages/Nutrition';
+
+// PrivateRoute component
+const PrivateRoute = ({ children }) => {
+  const token = localStorage.getItem('token');
+  return token ? children : <Navigate to="/login" replace />;
+};
 
 const App = () => {
   return (
@@ -16,9 +22,9 @@ const App = () => {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/Fitness" element={<Fitness />} />
-        <Route path="/Nutrition" element={<Nutrition />}/>
+        <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+        <Route path="/Fitness" element={<PrivateRoute><Fitness /></PrivateRoute>} />
+        <Route path="/Nutrition" element={<PrivateRoute><Nutrition /></PrivateRoute>} />
       </Routes>
     </div>
   );
