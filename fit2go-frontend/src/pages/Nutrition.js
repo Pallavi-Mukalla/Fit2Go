@@ -1,5 +1,6 @@
 import React, {Link,useEffect, useState } from "react";
 import "./Nutrition.css"; // Assuming you have a global CSS for all sections
+import { useNavigate } from 'react-router-dom';
 
 function Nutrition() {
   // State for Section 1
@@ -11,6 +12,9 @@ function Nutrition() {
       .join('')
       .toUpperCase()
   : '?';
+
+  const navigate = useNavigate();
+  const [showDropdown, setShowDropdown] = useState(false);
 
   useEffect(() => {
   async function fetchProfile() {
@@ -74,7 +78,7 @@ function Nutrition() {
     {
       icon: "checkmark",
       title: "Protein Intake",
-      description: "You’ve been consistently meeting your protein goals this week!",
+      description: "You've been consistently meeting your protein goals this week!",
       linkText: "View details",
       linkColor: "#007bff",
       backgroundColor: "#e6f4ea",
@@ -90,7 +94,7 @@ function Nutrition() {
     {
       icon: "water",
       title: "Hydration",
-      description: "You’re 40% below your water intake goal. Remember to drink more water!",
+      description: "You're 40% below your water intake goal. Remember to drink more water!",
       linkText: "Set reminder",
       linkColor: "#007bff",
       backgroundColor: "#e6f0ff",
@@ -114,11 +118,20 @@ function Nutrition() {
   ];
 
   const progressInsightsItems = [
-    "You’re 15% closer to your protein goals",
+    "You're 15% closer to your protein goals",
     "Calorie intake is consistent with muscle gain",
     "Consider adding more healthy fats to diet",
     "Your meal timing aligns well with workouts",
   ];
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
+
+  const handleProfileClick = () => {
+    setShowDropdown((prev) => !prev);
+  };
 
   return (
     <div>
@@ -133,10 +146,29 @@ function Nutrition() {
             <li><a href="#">Progress</a></li>
           </ul>
         </nav>
-        <div className="user-profile">
+        <div className="user-profile" style={{ position: 'relative', cursor: 'pointer' }} onClick={handleProfileClick}>
           <div className="user-initials">{initials}</div>
           <span>{user ? user.name : 'Guest'}</span>
-
+          {showDropdown && (
+            <div style={{ position: 'absolute', top: '100%', right: 0, background: 'white', border: '1px solid #ccc', borderRadius: '4px', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', zIndex: 10, minWidth: '120px', padding: '8px 0', display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}>
+              <span
+                style={{
+                  padding: '10px 20px',
+                  cursor: 'pointer',
+                  color: '#333',
+                  fontWeight: 500,
+                  borderRadius: '4px',
+                  transition: 'background 0.2s',
+                  textAlign: 'left',
+                }}
+                onClick={e => { e.stopPropagation(); handleLogout(); }}
+                onMouseOver={e => e.currentTarget.style.background = '#f5f5f5'}
+                onMouseOut={e => e.currentTarget.style.background = 'white'}
+              >
+                Logout
+              </span>
+            </div>
+          )}
         </div>
       </header>
 
