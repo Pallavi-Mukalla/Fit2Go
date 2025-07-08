@@ -80,6 +80,14 @@ app.get('/profile', auth, async (req, res) => {
   }
 });
 
+const mealsRoute = require('./routes/meals');
+app.use('/api/meals', mealsRoute);
+
+const waterRoute = require('./routes/water');
+app.use('/api/water', waterRoute);
+
+const recipesRoute = require('./routes/recipes');
+app.use('/api/recipes', recipesRoute);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

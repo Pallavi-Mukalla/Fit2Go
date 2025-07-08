@@ -1040,3 +1040,52 @@ section {
       flex: 1 1 100%; /* One per row */
   }
 }
+
+
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+}
+.modal input {
+  margin: 5px 0;
+  padding: 6px;
+}
+.modal-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+.modal-buttons button {
+  padding: 5px 10px;
+}
+
+
+.loader-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 10px;
+}
+
+.progress-ring {
+  transform: rotate(-90deg); /* start top */
+}
+
+.loader-text {
+  margin-top: 8px;
+  font-weight: bold;
+  color: #007bff;
+}
