@@ -19,3 +19,228 @@ header {
   .progress-bar.bg-purple {
     background-color: #A855F7;
   }
+
+/* Chatbot styles */
+.fit2go-chatbot-modal {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 350px;
+  height: 420px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.fit2go-chatbot-header {
+  background: linear-gradient(90deg,#3B82F6,#8B5CF6);
+  color: white;
+  padding: 16px;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.fit2go-chatbot-messages {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  background: #F3F4F6;
+}
+.fit2go-chatbot-message {
+  margin-bottom: 12px;
+  text-align: left;
+}
+.fit2go-chatbot-message.user {
+  text-align: right;
+}
+.fit2go-chatbot-bubble {
+  display: inline-block;
+  background: #fff;
+  color: #333;
+  border-radius: 12px;
+  padding: 8px 14px;
+  max-width: 220px;
+}
+.fit2go-chatbot-message.user .fit2go-chatbot-bubble {
+  background: #3B82F6;
+  color: white;
+}
+.fit2go-chatbot-input-row {
+  display: flex;
+  border-top: 1px solid #E5E7EB;
+  background: #fff;
+}
+.fit2go-chatbot-input-row input {
+  flex: 1;
+  border: none;
+  padding: 12px;
+  font-size: 15px;
+  outline: none;
+  background: none;
+}
+.fit2go-chatbot-input-row button {
+  background: none;
+  border: none;
+  color: #3B82F6;
+  font-weight: 600;
+  font-size: 16px;
+  padding: 0 16px;
+  cursor: pointer;
+}
+
+/* Floating Chatbot Button */
+.fit2go-chatbot-fab {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  z-index: 9998;
+  background: linear-gradient(90deg,#3B82F6,#8B5CF6);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  font-size: 28px;
+  box-shadow: 0 4px 16px rgba(59,130,246,0.18);
+  cursor: pointer;
+  display: block;
+}
+.fit2go-chatbot-fab.hide {
+  display: none;
+}
+
+.goal-card-modern {
+  box-shadow: 0 4px 24px rgba(59,130,246,0.08);
+  border-radius: 16px;
+  margin-bottom: 24px;
+  background: #fff;
+  border: 1px solid #E5E7EB;
+  transition: background 0.5s, box-shadow 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+.goal-card-modern[style*='#d1fae5'] {
+  background: #d1fae5 !important;
+  border: 2px solid #10B981 !important;
+}
+.goal-card-modern:hover {
+  box-shadow: 0 8px 32px rgba(59,130,246,0.16);
+  transform: translateY(-2px) scale(1.01);
+}
+.goal-card-modern h4 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 0.2em;
+}
+.goal-card-modern .primary {
+  background: linear-gradient(90deg,#3B82F6,#8B5CF6);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 18px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px #c7d2fe;
+}
+.goal-card-modern .primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.goal-card-modern .action-edit, .goal-card-modern .action-delete {
+  background: #F3F4F6;
+  color: #3B82F6;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-weight: 500;
+  font-size: 0.98rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.goal-card-modern .action-edit:hover {
+  background: #DBEAFE;
+  color: #6366F1;
+}
+.goal-card-modern .action-delete:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+@media (max-width: 600px) {
+  .goal-card-modern {
+    padding: 0 4px;
+  }
+  .goal-card-modern h4 {
+    font-size: 1rem;
+  }
+}
+/* Progress ring tweaks */
+.goal-card-modern svg {
+  display: block;
+  margin: 0 auto;
+}
+
+.workout-plan-card {
+  box-shadow: 0 4px 24px rgba(59,130,246,0.10);
+  border-radius: 18px;
+  background: #fff;
+  margin-bottom: 32px;
+  padding: 24px;
+  transition: box-shadow 0.2s;
+}
+.workout-plan-card h3 {
+  color: #3B82F6;
+  font-weight: 700;
+  margin-bottom: 18px;
+}
+.workout-plan-list {
+  width: 100%;
+}
+.workout-plan-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 14px;
+  border-radius: 12px;
+  background: #F3F4F6;
+  padding: 14px;
+  transition: background 0.3s, box-shadow 0.2s;
+}
+.workout-plan-row:hover {
+  background: #e0e7ff;
+  box-shadow: 0 2px 8px #c7d2fe;
+}
+.workout-plan-row[style*='#d1fae5'] {
+  background: #d1fae5 !important;
+  box-shadow: 0 2px 8px #bbf7d0 !important;
+}
+.workout-plan-row .primary {
+  background: linear-gradient(90deg,#3B82F6,#8B5CF6);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 18px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px #c7d2fe;
+}
+.workout-plan-row .primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+@media (max-width: 600px) {
+  .workout-plan-card {
+    padding: 10px;
+  }
+  .workout-plan-row {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 10px;
+  }
+}

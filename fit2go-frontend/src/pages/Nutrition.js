@@ -1,6 +1,7 @@
 import React, {Link,useEffect, useState } from "react";
 import "./Nutrition.css"; // Assuming you have a global CSS for all sections
 import { useNavigate } from 'react-router-dom';
+import Chatbot from '../components/Chatbot'; // Import the Chatbot component
 
 function Nutrition() {
   // State for Section 1
@@ -68,6 +69,49 @@ const [searchQuery, setSearchQuery] = useState('');
   fetchProfile();
 }, []);
 
+const [isChatOpen, setIsChatOpen] = useState(false);
+const [goals, setGoals] = useState([]);
+
+
+// Handler to add a goal from chatbot
+const handleAddGoalFromChatbot = async (goal) => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    console.error('No token found. User must be logged in.');
+    return;
+  }
+
+  const goalData = {
+    type: 'fitness',
+    target: goal.duration,
+    unit: 'minutes',
+    deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+    description: goal.title,
+  };
+
+  try {
+    const res = await fetch('http://localhost:5000/api/goals', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(goalData),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      setGoals((prevGoals) => [data.goal, ...prevGoals]); // Update local state
+      console.log('Goal added successfully:', data.goal);
+    } else {
+      const errorData = await res.json();
+      console.error('Failed to add goal:', errorData.message);
+    }
+  } catch (err) {
+    console.error('Error adding goal:', err.message);
+  }
+};
+
 useEffect(() => {
   async function fetchMeals() {
   const token = localStorage.getItem('token');
@@ -129,8 +173,6 @@ useEffect(() => {
   }
   return () => clearInterval(interval);
 }, [isLoadingRecipes]);
-
-  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Section 2 State
   const [isTooltipVisible, setIsTooltipVisible] = useState(false);
@@ -602,7 +644,25 @@ const fetchRecipesByFilter = async (filter) => {
         </div>
       </div>
     )}
+
+    <button
+  className={`fit2go-chatbot-fab${isChatOpen ? ' hide' : ''}`}
+  onClick={() => setIsChatOpen(true)}
+  aria-label="Open Chatbot"
+>
+  💬
+</button>
+<Chatbot
+  open={isChatOpen}
+  onClose={() => setIsChatOpen(false)}
+  user={user}
+  workouts={[]}
+  goals={[]}
+  onGoalAdd={handleAddGoalFromChatbot}
+/>
+
   </div>
+  
 );
 
 }

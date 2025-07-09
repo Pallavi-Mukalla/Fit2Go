@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Legend } from 'recharts';
+import Chatbot from '../components/Chatbot';
+import GoalCard from '../components/GoalCard';
+import GoalProgressRing from '../components/GoalProgressRing';
+import WorkoutPlanCard from '../components/WorkoutPlanCard';
 
 // CSS styles as a string
 const styles = `
@@ -383,17 +388,36 @@ const Header = ({ user }) => {
 
 
 // Dashboard Stats Component
+function getStartOfWeek(date, offset = 0) {
+  const d = new Date(date);
+  d.setDate(d.getDate() - d.getDay() + 1 + offset * 7); // Monday
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+function isInWeek(dateStr, weekStart) {
+  const d = new Date(dateStr);
+  d.setHours(0, 0, 0, 0);
+  return d >= weekStart && d < new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+}
 const DashboardStats = ({ workouts, goals }) => {
-  const totalMinutes = workouts.reduce((sum, workout) => sum + workout.duration, 0);
-  const totalCalories = workouts.reduce((sum, workout) => sum + workout.calories, 0);
-
+  const now = new Date();
+  const thisWeekStart = getStartOfWeek(now, 0);
+  const lastWeekStart = getStartOfWeek(now, -1);
+  const thisWeekWorkouts = workouts.filter(w => isInWeek(w.date, thisWeekStart));
+  const lastWeekWorkouts = workouts.filter(w => isInWeek(w.date, lastWeekStart));
+  const totalMinutes = thisWeekWorkouts.reduce((sum, workout) => sum + (typeof workout.duration === 'number' ? workout.duration : 0), 0);
+  const lastWeekMinutes = lastWeekWorkouts.reduce((sum, workout) => sum + (typeof workout.duration === 'number' ? workout.duration : 0), 0);
+  const totalCalories = thisWeekWorkouts.reduce((sum, workout) => sum + (typeof workout.calories === 'number' ? workout.calories : 0), 0);
+  const lastWeekCalories = lastWeekWorkouts.reduce((sum, workout) => sum + (typeof workout.calories === 'number' ? workout.calories : 0), 0);
+  const activeGoals = goals.filter(g => !g.achieved);
+  const completedGoals = goals.filter(g => g.achieved);
   return (
     <div className="stats-grid">
       <div className="stat-card">
         <div>
           <h3>Weekly Workouts</h3>
-          <p>{workouts.length}</p>
-          <p>+1 from last week</p>
+          <p>{thisWeekWorkouts.length}</p>
+          <p>{(thisWeekWorkouts.length - lastWeekWorkouts.length) >= 0 ? '+' : ''}{thisWeekWorkouts.length - lastWeekWorkouts.length} from last week</p>
         </div>
         <div className="icon" style={{ backgroundColor: '#DBEAFE' }}>
           <svg fill="none" stroke="#3B82F6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -405,7 +429,7 @@ const DashboardStats = ({ workouts, goals }) => {
         <div>
           <h3>Total Minutes</h3>
           <p>{totalMinutes}</p>
-          <p>+25 from last week</p>
+          <p>{(totalMinutes - lastWeekMinutes) >= 0 ? '+' : ''}{totalMinutes - lastWeekMinutes} from last week</p>
         </div>
         <div className="icon" style={{ backgroundColor: '#F3E8FF' }}>
           <svg fill="none" stroke="#8B5CF6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -417,7 +441,7 @@ const DashboardStats = ({ workouts, goals }) => {
         <div>
           <h3>Calories Burned</h3>
           <p>{totalCalories.toLocaleString()}</p>
-          <p>+180 from last week</p>
+          <p>{(totalCalories - lastWeekCalories) >= 0 ? '+' : ''}{totalCalories - lastWeekCalories} from last week</p>
         </div>
         <div className="icon" style={{ backgroundColor: '#FFEDD5' }}>
           <svg fill="none" stroke="#F97316" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -428,8 +452,8 @@ const DashboardStats = ({ workouts, goals }) => {
       <div className="stat-card">
         <div>
           <h3>Active Goals</h3>
-          <p>{goals.length}</p>
-          <p>{goals.filter(g => g.status === "In Progress").length} in progress</p>
+          <p>{activeGoals.length}</p>
+          <p>{activeGoals.length} in progress</p>
         </div>
         <div className="icon" style={{ backgroundColor: '#DBEAFE' }}>
           <svg fill="none" stroke="#3B82F6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -441,71 +465,174 @@ const DashboardStats = ({ workouts, goals }) => {
   );
 };
 
-// Progress Tracking Component
-const ProgressTracking = ({ goals }) => (
-  <div className="progress-grid">
-    <div className="section">
-      <h3>Workout Progress</h3>
-      <div className="timeframe">
-        <button className="active">Week</button>
-        <button>Month</button>
-        <button>Year</button>
+const COLORS = ['#3B82F6', '#10B981', '#F59E42', '#8B5CF6', '#F97316', '#EF4444'];
+
+function getWeekData(workouts) {
+  // Group workouts by day of week (Mon-Sun)
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const now = new Date();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - now.getDay() + 1); // Monday
+  const data = days.map((day, i) => {
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + i);
+    const dateStr = d.toISOString().slice(0, 10);
+    const dayWorkouts = workouts.filter(w => w.date === dateStr);
+    return {
+      day,
+      workouts: dayWorkouts.length,
+      calories: dayWorkouts.reduce((sum, w) => sum + (w.calories || 0), 0)
+    };
+  });
+  return data;
+}
+
+const ProgressTracking = ({ goals, workouts }) => {
+  const weekData = getWeekData(workouts);
+  const goalPieData = goals.map((g, i) => ({
+    name: g.type + ' (' + g.unit + ')',
+    value: Math.min(100, (g.progress || 0) / (g.target || 1) * 100),
+    color: COLORS[i % COLORS.length]
+  }));
+
+  return (
+    <div className="progress-grid">
+      <div className="section">
+        <h3>Workouts This Week</h3>
+        <ResponsiveContainer width="100%" height={220}>
+          <BarChart data={weekData} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
+            <XAxis dataKey="day" stroke="#6B7280" />
+            <YAxis stroke="#6B7280" />
+            <Tooltip />
+            <Bar dataKey="workouts" fill="#3B82F6" radius={[8, 8, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
-      <div>
-        <p style={{ color: '#6B7280' }}>Graph placeholder: Workouts (blue) and Calories Burned (orange) over the week.</p>
+      <div className="section">
+        <h3>Calories Burned This Week</h3>
+        <ResponsiveContainer width="100%" height={220}>
+          <LineChart data={weekData} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
+            <XAxis dataKey="day" stroke="#6B7280" />
+            <YAxis stroke="#6B7280" />
+            <Tooltip />
+            <Line type="monotone" dataKey="calories" stroke="#F97316" strokeWidth={3} dot={{ r: 5 }} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="section">
+        <h3>Goal Progress</h3>
+        <ResponsiveContainer width="100%" height={220}>
+          <PieChart>
+            <Pie
+              data={goalPieData}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              outerRadius={80}
+              label={({ name, value }) => `${name}: ${Math.round(value)}%`}
+            >
+              {goalPieData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Pie>
+            <Legend />
+            <Tooltip />
+          </PieChart>
+        </ResponsiveContainer>
       </div>
     </div>
-    <div className="section">
-      <h3>Goal Progress</h3>
-      {goals.map(goal => (
-        <div key={goal.id} className="goal-item">
-          <p>{goal.title}</p>
-          <p>{`${goal.progress}/${goal.target} ${goal.unit || ""}`}</p>
-          <div className="progress-bar">
-            <div
-              style={{
-                width: `${(goal.progress / goal.target) * 100}%`,
-                backgroundColor: goal.id === 1 ? '#3B82F6' : goal.id === 2 ? '#10B981' : '#8B5CF6'
-              }}
-            ></div>
-          </div>
-        </div>
-      ))}
-      <div className="overall">
-        <p>75%</p>
-        <p>Overall</p>
-      </div>
-    </div>
-  </div>
-);
+  );
+};
 
 // Workout Logs Component
-const WorkoutLogs = ({ workouts, setWorkouts }) => {
+const WorkoutLogs = ({ workouts, setWorkouts, fetchGoals }) => {
   const [newWorkout, setNewWorkout] = useState({ type: "Cardio", duration: 30, date: "2025-05-02" });
   const [editingWorkout, setEditingWorkout] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState(null);
+  const token = localStorage.getItem('token');
 
-  const handleAddWorkout = () => {
-    const calories = newWorkout.type === "Cardio" ? newWorkout.duration * 7 : 
-                    newWorkout.type === "Strength" ? newWorkout.duration * 7.5 : 
-                    newWorkout.type === "Yoga" ? newWorkout.duration * 5 : newWorkout.duration * 12;
-    const workout = {
-      id: editingWorkout ? editingWorkout.id : workouts.length + 1,
+  // Toast floating at top center
+  const Toast = ({ msg, type }) => (
+    <div style={{
+      position: 'fixed',
+      top: 20,
+      left: '50%',
+      transform: 'translateX(-50%)',
+      zIndex: 9999,
+      background: type === 'error' ? '#fee2e2' : '#d1fae5',
+      color: type === 'error' ? '#b91c1c' : '#065f46',
+      padding: '12px 32px',
+      borderRadius: 12,
+      fontWeight: 600,
+      boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+    }}>{msg}</div>
+  );
+
+  const showToast = (msg, type = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 2500);
+  };
+
+  const handleAddWorkout = async () => {
+    if (!newWorkout.type || !newWorkout.duration || !newWorkout.date) {
+      showToast('Please fill all fields', 'error');
+      return;
+    }
+    setLoading(true);
+    const calories = newWorkout.type === "Cardio" ? newWorkout.duration * 7 :
+      newWorkout.type === "Strength" ? newWorkout.duration * 7.5 :
+        newWorkout.type === "Yoga" ? newWorkout.duration * 5 : newWorkout.duration * 12;
+    const workoutData = {
+      title: `${newWorkout.type} on ${newWorkout.date}`,
       date: newWorkout.date,
       type: newWorkout.type,
       duration: newWorkout.duration,
       calories: calories
     };
-
-    if (editingWorkout) {
-      // Update existing workout
-      setWorkouts(workouts.map(w => (w.id === editingWorkout.id ? workout : w)));
-      setEditingWorkout(null);
-    } else {
-      // Add new workout
-      setWorkouts([workout, ...workouts]);
+    try {
+      if (editingWorkout) {
+        const res = await fetch(`http://localhost:5000/api/workouts/${editingWorkout._id || editingWorkout.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(workoutData)
+        });
+        if (res.ok) {
+          const updated = await res.json();
+          setWorkouts(workouts.map(w => (w._id === updated.workout._id ? updated.workout : w)));
+          setEditingWorkout(null);
+          showToast('Workout updated!');
+          if (fetchGoals) await fetchGoals();
+        } else {
+          showToast('Error updating workout', 'error');
+        }
+      } else {
+        const res = await fetch('http://localhost:5000/api/workouts', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(workoutData)
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setWorkouts([data.workout, ...workouts]);
+          showToast('Workout added!');
+          if (fetchGoals) await fetchGoals();
+        } else {
+          showToast('Error adding workout', 'error');
+        }
+      }
+    } catch (err) {
+      showToast('Error saving workout', 'error');
     }
-    // Reset form
     setNewWorkout({ type: "Cardio", duration: 30, date: "2025-05-02" });
+    setLoading(false);
   };
 
   const handleEditWorkout = (workout) => {
@@ -522,12 +649,30 @@ const WorkoutLogs = ({ workouts, setWorkouts }) => {
     setNewWorkout({ type: "Cardio", duration: 30, date: "2025-05-02" });
   };
 
-  const handleDeleteWorkout = (id) => {
-    setWorkouts(workouts.filter(workout => workout.id !== id));
+  const handleDeleteWorkout = async (id) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`http://localhost:5000/api/workouts/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        setWorkouts(workouts.filter(workout => (workout._id || workout.id) !== id));
+        showToast('Workout deleted!');
+      } else {
+        showToast('Error deleting workout', 'error');
+      }
+    } catch (err) {
+      showToast('Error deleting workout', 'error');
+    }
+    setLoading(false);
   };
 
   return (
     <div>
+      {toast && <Toast msg={toast.msg} type={toast.type} />}
       <div className="section" style={{ marginBottom: '16px' }}>
         <h3>{editingWorkout ? "Edit Workout" : "Add New"}</h3>
         <div className="form-grid">
@@ -536,6 +681,7 @@ const WorkoutLogs = ({ workouts, setWorkouts }) => {
             <select
               value={newWorkout.type}
               onChange={(e) => setNewWorkout({ ...newWorkout, type: e.target.value })}
+              disabled={loading}
             >
               <option>Cardio</option>
               <option>Strength</option>
@@ -549,6 +695,7 @@ const WorkoutLogs = ({ workouts, setWorkouts }) => {
               type="number"
               value={newWorkout.duration}
               onChange={(e) => setNewWorkout({ ...newWorkout, duration: parseInt(e.target.value) })}
+              disabled={loading}
             />
           </div>
           <div className="form-group">
@@ -557,16 +704,17 @@ const WorkoutLogs = ({ workouts, setWorkouts }) => {
               type="date"
               value={newWorkout.date}
               onChange={(e) => setNewWorkout({ ...newWorkout, date: e.target.value })}
+              disabled={loading}
             />
           </div>
         </div>
         <div className="button-group">
           {editingWorkout && (
-            <button className="cancel" onClick={handleCancelEdit}>
+            <button className="cancel" onClick={handleCancelEdit} disabled={loading}>
               Cancel
             </button>
           )}
-          <button className="primary" onClick={handleAddWorkout}>
+          <button className="primary" onClick={handleAddWorkout} disabled={loading}>
             {editingWorkout ? "Save Changes" : "Add Workout"}
           </button>
         </div>
@@ -574,6 +722,7 @@ const WorkoutLogs = ({ workouts, setWorkouts }) => {
 
       <div className="section">
         <h3>Recent Workouts</h3>
+        {loading && <div>Loading...</div>}
         <table>
           <thead>
             <tr>
@@ -586,7 +735,7 @@ const WorkoutLogs = ({ workouts, setWorkouts }) => {
           </thead>
           <tbody>
             {workouts.map(workout => (
-              <tr key={workout.id}>
+              <tr key={workout._id || workout.id}>
                 <td>{workout.date}</td>
                 <td>
                   <span
@@ -604,12 +753,12 @@ const WorkoutLogs = ({ workouts, setWorkouts }) => {
                   </span>
                 </td>
                 <td>{workout.duration} min</td>
-                <td>{workout.calories}</td>
+                <td>{typeof workout.calories === 'number' ? workout.calories : ''}</td>
                 <td>
-                  <button className="action-edit" onClick={() => handleEditWorkout(workout)}>
+                  <button className="action-edit" onClick={() => handleEditWorkout(workout)} disabled={loading}>
                     Edit
                   </button>
-                  <button className="action-delete" onClick={() => handleDeleteWorkout(workout.id)}>
+                  <button className="action-delete" onClick={() => handleDeleteWorkout(workout._id || workout.id)} disabled={loading}>
                     Delete
                   </button>
                 </td>
@@ -624,92 +773,245 @@ const WorkoutLogs = ({ workouts, setWorkouts }) => {
 
 // Goals Component
 const Goals = ({ goals, setGoals }) => {
-  const [newGoal, setNewGoal] = useState({ title: "", type: "Workout Count", target: "", unit: "times", date: "2025-06-02", description: "" });
+  const [newGoal, setNewGoal] = useState({ type: "fitness", target: "", unit: "workouts", deadline: "2025-06-02", description: "" });
+  const [editingGoal, setEditingGoal] = useState(null);
+  const [progressInput, setProgressInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState(null);
+  const token = localStorage.getItem('token');
 
-  const handleAddGoal = () => {
-    const goal = {
-      id: goals.length + 1,
-      title: newGoal.title,
-      description: newGoal.description,
-      progress: 0,
+  // Map goal type to allowed units
+  const unitOptions = {
+    weightLoss: ["kg", "lbs"],
+    muscleGain: ["kg", "lbs"],
+    fitness: ["workouts", "minutes", "km"],
+    nutrition: ["calories", "protein (g)", "carbs (g)", "fat (g)"]
+  };
+
+  // Toast floating at top center
+  const Toast = ({ msg, type }) => (
+    <div style={{
+      position: 'fixed',
+      top: 20,
+      left: '50%',
+      transform: 'translateX(-50%)',
+      zIndex: 9999,
+      background: type === 'error' ? '#fee2e2' : '#d1fae5',
+      color: type === 'error' ? '#b91c1c' : '#065f46',
+      padding: '12px 32px',
+      borderRadius: 12,
+      fontWeight: 600,
+      boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+    }}>{msg}</div>
+  );
+
+  const showToast = (msg, type = 'success', celebrate = false) => {
+    setToast({ msg, type, celebrate });
+    setTimeout(() => setToast(null), 2500);
+  };
+
+  const handleAddGoal = async () => {
+    setLoading(true);
+    const goalData = {
+      type: newGoal.type,
       target: parseFloat(newGoal.target),
       unit: newGoal.unit,
-      status: "In Progress"
+      deadline: newGoal.deadline,
+      description: newGoal.description
     };
-    setGoals([...goals, goal]);
-    setNewGoal({ title: "", type: "Workout Count", target: "", unit: "times", date: "2025-06-02", description: "" });
+    try {
+      const res = await fetch('http://localhost:5000/api/goals', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(goalData)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setGoals([data.goal, ...goals]);
+        showToast('Goal created!');
+      } else {
+        showToast('Error creating goal', 'error');
+      }
+    } catch (err) {
+      showToast('Error creating goal', 'error');
+    }
+    setNewGoal({ type: "fitness", target: "", unit: "workouts", deadline: "2025-06-02", description: "" });
+    setLoading(false);
+  };
+
+  const handleTypeChange = (e) => {
+    const type = e.target.value;
+    setNewGoal({ ...newGoal, type, unit: unitOptions[type][0] });
+  };
+
+  const handleDeleteGoal = async (id) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`http://localhost:5000/api/goals/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setGoals(goals.filter(g => (g._id || g.id) !== id));
+        showToast('Goal deleted!');
+      } else {
+        showToast('Error deleting goal', 'error');
+      }
+    } catch (err) {
+      showToast('Error deleting goal', 'error');
+    }
+    setLoading(false);
+  };
+
+  const handleEditGoal = (goal) => {
+    setEditingGoal(goal);
+    setNewGoal({
+      type: goal.type,
+      target: goal.target,
+      unit: goal.unit,
+      deadline: goal.deadline ? goal.deadline.slice(0, 10) : "2025-06-02",
+      description: goal.description || ""
+    });
+  };
+
+  const handleUpdateGoal = async () => {
+    setLoading(true);
+    const goalData = {
+      type: newGoal.type,
+      target: parseFloat(newGoal.target),
+      unit: newGoal.unit,
+      deadline: newGoal.deadline,
+      description: newGoal.description
+    };
+    try {
+      const res = await fetch(`http://localhost:5000/api/goals/${editingGoal._id || editingGoal.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(goalData)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setGoals(goals.map(g => (g._id === data.goal._id ? data.goal : g)));
+        showToast('Goal updated!');
+        setEditingGoal(null);
+      } else {
+        showToast('Error updating goal', 'error');
+      }
+    } catch (err) {
+      showToast('Error updating goal', 'error');
+    }
+    setNewGoal({ type: "fitness", target: "", unit: "workouts", deadline: "2025-06-02", description: "" });
+    setLoading(false);
+  };
+
+  const handleProgressUpdate = async (goal) => {
+    setLoading(true);
+    const newProgress = parseFloat(progressInput);
+    if (isNaN(newProgress)) {
+      showToast('Enter a valid number', 'error');
+      setLoading(false);
+      return;
+    }
+    try {
+      const res = await fetch(`http://localhost:5000/api/goals/${goal._id || goal.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ progress: (goal.progress || 0) + newProgress })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setGoals(goals.map(g => (g._id === data.goal._id ? data.goal : g)));
+        if (data.goal.achieved) {
+          showToast('Goal Achieved! 🎉', 'success', true);
+        } else {
+          showToast('Progress updated!');
+        }
+        setProgressInput("");
+      } else {
+        showToast('Error updating progress', 'error');
+      }
+    } catch (err) {
+      showToast('Error updating progress', 'error');
+    }
+    setLoading(false);
   };
 
   return (
     <div className="progress-grid">
+      {toast && <Toast msg={toast.msg} type={toast.type} />}
       <div className="section">
         <h3>Current Goals</h3>
+        {loading && <div>Loading...</div>}
         {goals.map(goal => (
-          <div key={goal.id} className="goal-item">
-            <p>{goal.title}</p>
-            <p>{goal.description}</p>
-            <p>{goal.status}</p>
-            <p>{`${goal.progress}/${goal.target} ${goal.unit || ""}`}</p>
-            <div className="progress-bar">
-              <div
-                style={{
-                  width: `${(goal.progress / goal.target) * 100}%`,
-                  backgroundColor: goal.id === 1 ? '#3B82F6' : goal.id === 2 ? '#10B981' : '#8B5CF6'
-                }}
-              ></div>
-            </div>
-          </div>
+          <GoalCard
+            key={goal._id || goal.id}
+            goal={goal}
+            onEdit={() => handleEditGoal(goal)}
+            onDelete={() => handleDeleteGoal(goal._id || goal.id)}
+            onProgressUpdate={handleProgressUpdate}
+            progressInput={progressInput}
+            setProgressInput={setProgressInput}
+            loading={loading}
+            GoalProgressRing={GoalProgressRing}
+            // Add more props as needed for details, history, actions
+          />
         ))}
       </div>
 
       <div className="section">
-        <h3>Create New Goal</h3>
+        <h3>{editingGoal ? 'Edit Goal' : 'Create New Goal'}</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div className="form-group">
-            <label>Goal Title</label>
-            <input
-              type="text"
-              placeholder="e.g., Run a 5K"
-              value={newGoal.title}
-              onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
-            />
-          </div>
           <div className="form-group">
             <label>Goal Type</label>
             <select
               value={newGoal.type}
-              onChange={(e) => setNewGoal({ ...newGoal, type: e.target.value, unit: e.target.value === "Workout Count" ? "times" : e.target.value === "Weight Loss" ? "kg" : "km" })}
+              onChange={handleTypeChange}
+              disabled={loading}
             >
-              <option>Workout Count</option>
-              <option>Weight Loss</option>
-              <option>Run Distance</option>
+              <option value="weightLoss">Weight Loss</option>
+              <option value="muscleGain">Muscle Gain</option>
+              <option value="fitness">Fitness</option>
+              <option value="nutrition">Nutrition</option>
             </select>
           </div>
-          <div className="form-grid">
-            <div className="form-group">
-              <label>Target Value</label>
-              <input
-                type="number"
-                placeholder="e.g., 5"
-                value={newGoal.target}
-                onChange={(e) => setNewGoal({ ...newGoal, target: e.target.value })}
-              />
-            </div>
-            <div className="form-group">
-              <label>Unit</label>
-              <input
-                type="text"
-                value={newGoal.unit}
-                readOnly
-              />
-            </div>
+          <div className="form-group">
+            <label>Target Value</label>
+            <input
+              type="number"
+              placeholder="e.g., 5"
+              value={newGoal.target}
+              onChange={(e) => setNewGoal({ ...newGoal, target: e.target.value })}
+              disabled={loading}
+            />
           </div>
           <div className="form-group">
-            <label>Target Date</label>
+            <label>Unit</label>
+            <select
+              value={newGoal.unit}
+              onChange={(e) => setNewGoal({ ...newGoal, unit: e.target.value })}
+              disabled={loading}
+            >
+              {unitOptions[newGoal.type].map(unit => (
+                <option key={unit} value={unit}>{unit}</option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Deadline</label>
             <input
               type="date"
-              value={newGoal.date}
-              onChange={(e) => setNewGoal({ ...newGoal, date: e.target.value })}
+              value={newGoal.deadline}
+              onChange={(e) => setNewGoal({ ...newGoal, deadline: e.target.value })}
+              disabled={loading}
             />
           </div>
           <div className="form-group">
@@ -718,11 +1020,15 @@ const Goals = ({ goals, setGoals }) => {
               placeholder="Add details about your goal..."
               value={newGoal.description}
               onChange={(e) => setNewGoal({ ...newGoal, description: e.target.value })}
+              disabled={loading}
             />
           </div>
-          <button className="primary" onClick={handleAddGoal}>
-            Create Goal
+          <button className="primary" onClick={editingGoal ? handleUpdateGoal : handleAddGoal} disabled={loading}>
+            {editingGoal ? 'Save Changes' : 'Create Goal'}
           </button>
+          {editingGoal && (
+            <button className="cancel" onClick={() => { setEditingGoal(null); setNewGoal({ type: "fitness", target: "", unit: "workouts", deadline: "2025-06-02", description: "" }); }} disabled={loading}>Cancel</button>
+          )}
         </div>
       </div>
     </div>
@@ -732,33 +1038,147 @@ const Goals = ({ goals, setGoals }) => {
 // Main App Component
 const Fitness = () => {
   const [activeTab, setActiveTab] = useState("Progress Tracking");
-  const [workouts, setWorkouts] = useState(initialWorkouts);
-  const [goals, setGoals] = useState(initialGoals);
+  const [workouts, setWorkouts] = useState([]); // Start with empty, fetch from backend
+  const [goals, setGoals] = useState([]); // Start with empty, fetch from backend
   const [user, setUser] = useState(null);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [weeklyPlan, setWeeklyPlan] = useState([
+    { day: 'Monday', type: 'Strength', duration: 60, exercises: ['Squats', 'Deadlifts', 'Bench Press'], done: false },
+    { day: 'Tuesday', type: 'Yoga', duration: 45, exercises: ['Sun Salutation', 'Warrior Flow'], done: false },
+    { day: 'Wednesday', type: 'Cardio', duration: 45, exercises: ['HIIT Sprints', 'Jump Rope'], done: false },
+    { day: 'Thursday', type: 'Active Recovery', duration: 30, exercises: ['Walking', 'Stretching'], done: false },
+    { day: 'Friday', type: 'Strength & Sculpt', duration: 60, exercises: ['Lunges', 'Shoulder Press'], done: false },
+    { day: 'Saturday', type: 'Full-Body', duration: 60, exercises: ['Burpees', 'Plank', 'Pushups'], done: false },
+    { day: 'Sunday', type: 'Mobility', duration: 30, exercises: ['Yoga Flow', 'Foam Rolling'], done: false },
+  ]);
 
-  useEffect(() => {
-  async function fetchProfile() {
-    const token = localStorage.getItem('token'); // Make sure you store the token at login
+  async function fetchGoals() {
+    const token = localStorage.getItem('token');
     if (!token) return;
-
-    const res = await fetch('http://localhost:5000/profile', {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+    const res = await fetch('http://localhost:5000/api/goals', {
+      headers: { 'Authorization': `Bearer ${token}` }
     });
-
     if (res.ok) {
       const data = await res.json();
-      console.log('Profile data:', data);
-      setUser(data);
-    } else {
-      console.error('Failed to fetch profile');
+      setGoals(data);
     }
   }
 
-  fetchProfile();
-}, []);
+  useEffect(() => {
+    async function fetchProfile() {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const res = await fetch('http://localhost:5000/profile', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data);
+      }
+    }
+    async function fetchWorkouts() {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const res = await fetch('http://localhost:5000/api/workouts', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setWorkouts(data);
+      }
+    }
+    fetchProfile();
+    fetchWorkouts();
+    fetchGoals();
+  }, []);
 
+  // Handler to add a goal from chatbot
+  const handleAddGoalFromChatbot = async (goal) => {
+    const token = localStorage.getItem('token');
+    const goalData = {
+      type: 'fitness',
+      target: goal.duration,
+      unit: 'minutes',
+      deadline: new Date(Date.now() + 7*24*60*60*1000).toISOString().slice(0,10), // 1 week from now
+      description: goal.title
+    };
+    const res = await fetch('http://localhost:5000/api/goals', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(goalData)
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setGoals([data.goal, ...goals]);
+    }
+  };
+
+  const handleWorkoutDone = async (dayIndex) => {
+    const plan = weeklyPlan[dayIndex];
+    if (plan.done) return;
+    // Log workout to backend
+    const token = localStorage.getItem('token');
+    const workoutData = {
+      title: `${plan.type} (${plan.day})`,
+      date: new Date(Date.now() - ((6 - dayIndex) * 24 * 60 * 60 * 1000)).toISOString().slice(0,10),
+      type: plan.type,
+      duration: plan.duration,
+      calories: plan.duration * 7 // estimate
+    };
+    const res = await fetch('http://localhost:5000/api/workouts', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(workoutData)
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setWorkouts([data.workout, ...workouts]);
+      // Optionally update goal progress
+      if (goals.some(g => g.type === 'fitness')) {
+        // Find fitness goal and update progress
+        const fitnessGoal = goals.find(g => g.type === 'fitness');
+        const progress = (fitnessGoal.progress || 0) + 1;
+        await fetch(`http://localhost:5000/api/goals/${fitnessGoal._id || fitnessGoal.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ progress })
+        });
+        fetchGoals();
+      }
+      // Mark as done in UI
+      setWeeklyPlan(weeklyPlan.map((w, i) => i === dayIndex ? { ...w, done: true } : w));
+    }
+  };
+
+  const handleAddToCalendar = (day, dayIndex) => {
+    // Compute the date for this day in the current week
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay() + 1); // Monday
+    const workoutDate = new Date(weekStart);
+    workoutDate.setDate(weekStart.getDate() + dayIndex);
+    const yyyy = workoutDate.getFullYear();
+    const mm = String(workoutDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(workoutDate.getDate()).padStart(2, '0');
+    // Start time: 7am, End time: 7am + duration
+    const startHour = 7;
+    const endHour = 7 + Math.floor(day.duration / 60);
+    const start = `${yyyy}${mm}${dd}T${String(startHour).padStart(2, '0')}0000`;
+    const end = `${yyyy}${mm}${dd}T${String(endHour).padStart(2, '0')}0000`;
+    const title = encodeURIComponent(`${day.type} Workout`);
+    const details = encodeURIComponent(`Exercises: ${day.exercises.join(', ')}`);
+    const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&details=${details}`;
+    window.open(calendarUrl, '_blank');
+  };
 
   return (
     <div>
@@ -766,6 +1186,7 @@ const Fitness = () => {
 
       <div className="container">
         <h2 className="dashboard-title">Your Fitness Dashboard</h2>
+        <WorkoutPlanCard weeklyPlan={weeklyPlan} onWorkoutDone={handleWorkoutDone} onAddToCalendar={handleAddToCalendar} />
         <DashboardStats workouts={workouts} goals={goals} />
         <div className="tabs">
           {["Progress Tracking", "Workout Logs", "Goals"].map(tab => (
@@ -778,10 +1199,24 @@ const Fitness = () => {
             </button>
           ))}
         </div>
-        {activeTab === "Progress Tracking" && <ProgressTracking goals={goals} />}
-        {activeTab === "Workout Logs" && <WorkoutLogs workouts={workouts} setWorkouts={setWorkouts} />}
+        {activeTab === "Progress Tracking" && <ProgressTracking goals={goals} workouts={workouts} />}
+        {activeTab === "Workout Logs" && <WorkoutLogs workouts={workouts} setWorkouts={setWorkouts} fetchGoals={fetchGoals} />}
         {activeTab === "Goals" && <Goals goals={goals} setGoals={setGoals} />}
       </div>
+      {/* Floating Chatbot Button */}
+      <button
+        className={`fit2go-chatbot-fab${chatOpen ? ' hide' : ''}`}
+        onClick={() => setChatOpen(true)}
+        aria-label="Open Chatbot"
+      >💬</button>
+      <Chatbot
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+        user={user}
+        workouts={workouts}
+        goals={goals}
+        onGoalAdd={handleAddGoalFromChatbot}
+      />
     </div>
   );
 };
