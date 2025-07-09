@@ -2,19 +2,26 @@ import React, { useState, useRef, useEffect } from 'react';
 import botAvatar from '../Fit2Go.jpg'; // Use your logo or a bot image
 
 function isWorkoutRecommendationRequest(text) {
-  const keywords = [
-    'recommend', 'suggest', 'workout', 'exercise', 'routine', 'plan', 'give me a workout', 'what should I do', 'any workout', 'fitness idea'
+  const lower = text.toLowerCase();
+  // Only trigger workout if it's clearly about workouts
+  const workoutKeywords = [
+    'workout', 'exercise', 'routine', 'give me a workout', 'what should i do', 'any workout', 'fitness idea', 'workout plan', 'exercise plan', 'fitness plan'
   ];
-  return keywords.some(k => text.toLowerCase().includes(k));
+  // Avoid triggering on 'plan' alone
+  if (lower.includes('diet')) return false;
+  return workoutKeywords.some(k => lower.includes(k));
 }
 function isMealRecommendationRequest(text) {
-  const keywords = [
-    'meal', 'food', 'diet', 'nutrition', 'what should I eat', 'suggest a meal', 'recommend a meal', 'macro', 'protein', 'carbs', 'fat', 'calories', 'breakfast', 'lunch', 'dinner', 'snack'
+  const lower = text.toLowerCase();
+  // Prioritize diet/diet plan
+  if (lower.includes('diet plan') || lower.includes('diet')) return true;
+  const mealKeywords = [
+    'meal', 'food', 'nutrition', 'what should i eat', 'suggest a meal', 'recommend a meal', 'macro', 'protein', 'carbs', 'fat', 'calories', 'breakfast', 'lunch', 'dinner', 'snack', 'weight loss', 'healthy eating', 'lose weight', 'gain weight', 'bulking', 'cutting'
   ];
-  return keywords.some(k => text.toLowerCase().includes(k));
+  return mealKeywords.some(k => lower.includes(k));
 }
 
-const Chatbot = ({ open, onClose, user, workouts, goals, onGoalAdd, onMealAdd }) => {
+const Chatbot = ({ open, onClose, user, workouts, goals, meals, onGoalAdd, onMealAdd }) => {
   const [messages, setMessages] = useState([
     { from: 'bot', text: `Hi${user?.name ? ', ' + user.name.split(' ')[0] : ''}! I am your Fit2Go AI assistant. How can I help you with your fitness today?` }
   ]);
@@ -104,11 +111,24 @@ const Chatbot = ({ open, onClose, user, workouts, goals, onGoalAdd, onMealAdd })
       return;
     }
     if (isMealRecommendationRequest(input)) {
-      const prompt = `Suggest a personalized meal or nutrition plan for this user: ${user?.name || ''}, goals: ${goals.map(g=>g.type+':'+g.target+' '+g.unit).join(', ')}. Reply with a meal suggestion (title, description, macros if possible).`;
+      // Try to extract a goal from the user's input
+      const lowerInput = input.toLowerCase();
+      let userGoal = '';
+      if (lowerInput.includes('weight loss')) userGoal = 'weight loss';
+      else if (lowerInput.includes('muscle gain')) userGoal = 'muscle gain';
+      else if (lowerInput.includes('maintain')) userGoal = 'maintain current weight';
+      else if (lowerInput.includes('energy')) userGoal = 'improve energy levels';
+      // If no goal in input, try to use user's goals
+      let goalText = userGoal || goals.map(g=>g.type+':'+g.target+' '+g.unit).join(', ');
+      // If still no goal, use a default
+      if (!goalText) goalText = 'weight loss';
+      const prompt = `Suggest a variety of healthy meals or foods for ${goalText} (or based on the user's request). Do not ask the user for any personal information or dietary details. Respond casually and helpfully, as if chatting with a friend. Always provide a direct and varied suggestion.`;
       const aiResponse = await fetchGeminiResponse(prompt);
+      // Only offer to add to meal plan if the response contains a real suggestion
       const lines = aiResponse.split('\n').filter(Boolean);
       let meal = null;
-      if (lines.length > 0) {
+      // Heuristic: if the first line is a food/meal name and not a question/request
+      if (lines.length > 0 && !/please specify|provide|can't|cannot|need more info|what is your goal|what are your goals|dietary restriction|preference/i.test(aiResponse)) {
         meal = {
           title: lines[0],
           description: lines.slice(1).join(' ')
@@ -124,39 +144,7 @@ const Chatbot = ({ open, onClose, user, workouts, goals, onGoalAdd, onMealAdd })
     setInput('');
   };
 
-  // --- UI ---
-  // Floating button (always visible)
-  if (!open) {
-    return (
-      <button
-        className="fit2go-chatbot-fab"
-        style={{
-          position: 'fixed',
-          bottom: 30,
-          right: 30,
-          zIndex: 9998,
-          background: 'linear-gradient(135deg,#3B82F6,#8B5CF6)',
-          color: 'white',
-          border: 'none',
-          borderRadius: '50%',
-          width: 60,
-          height: 60,
-          fontSize: 32,
-          boxShadow: '0 4px 16px rgba(59,130,246,0.18)',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transition: 'box-shadow 0.2s, transform 0.2s',
-          animation: 'chat-fab-pop 0.5s',
-        }}
-        onClick={onClose ? onClose : () => {}}
-        aria-label="Open Chatbot"
-      >
-        <span style={{fontSize: 28}}>💬</span>
-      </button>
-    );
-  }
+  if (!open) return null;
 
   return (
     <div

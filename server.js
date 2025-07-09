@@ -323,6 +323,58 @@ app.get('/api/genai/models', auth, async (req, res) => {
   }
 });
 
+// --- Weekly Plan Route ---
+app.get('/api/weekly-plan', auth, async (req, res) => {
+  // For demo: mock data. In production, fetch/generate from DB or user profile.
+  const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const exercisePool = [
+    { name: 'Push Ups', min: 10, max: 20 },
+    { name: 'Squats', min: 15, max: 30 },
+    { name: 'Plank', min: 2, max: 5 },
+    { name: 'Jumping Jacks', min: 20, max: 40 },
+    { name: 'Burpees', min: 10, max: 20 },
+    { name: 'Lunges', min: 12, max: 24 },
+    { name: 'Mountain Climbers', min: 20, max: 40 },
+    { name: 'Sit Ups', min: 15, max: 30 },
+    { name: 'High Knees', min: 20, max: 40 },
+    { name: 'Yoga', min: 20, max: 40 }
+  ];
+  // Use userId to seed randomization for user-specific plans (simple hash)
+  function seededRandom(seed) {
+    let x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
+  }
+  function getSeed(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return Math.abs(hash);
+  }
+  const userSeed = getSeed(req.userId.toString());
+  // Generate a plan for each day
+  const plan = days.map((day, i) => {
+    // Pick 2-3 exercises per day, random but user-seeded
+    const exCount = 2 + Math.floor(seededRandom(userSeed + i) * 2); // 2 or 3
+    let indices = [];
+    while (indices.length < exCount) {
+      let idx = Math.floor(seededRandom(userSeed + i * 10 + indices.length) * exercisePool.length);
+      if (!indices.includes(idx)) indices.push(idx);
+    }
+    const exercises = indices.map(idx => {
+      const ex = exercisePool[idx];
+      // Duration random in range, user-seeded
+      const duration = ex.min + Math.floor(seededRandom(userSeed + i * 100 + idx) * (ex.max - ex.min + 1));
+      return { name: ex.name, duration };
+    });
+    return {
+      day,
+      exercises,
+      done: false
+    };
+  });
+  res.json(plan);
+});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
