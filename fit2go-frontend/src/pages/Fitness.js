@@ -349,6 +349,16 @@ const Header = ({ user }) => {
         </svg>
         <h1>FitTrack</h1>
       </div>
+      <div>
+      <nav className="nav">
+        <ul>
+          <li><button onClick={() => navigate('/dashboard')}>Dashboard</button></li>
+          <li><button onClick={() => navigate('/nutrition')}>Nutrition</button></li>
+          <li><button onClick={() => navigate('/fitness')}>Workouts</button></li>
+          {/* <li><button onClick={() => navigate('/Chatbot')}>chatbot</button></li> */}
+        </ul>
+      </nav>
+      </div>
       <div className="user" style={{ position: 'relative', cursor: 'pointer' }} onClick={handleProfileClick}>
         {user ? (
           <>
@@ -1203,12 +1213,6 @@ const Fitness = () => {
         {activeTab === "Workout Logs" && <WorkoutLogs workouts={workouts} setWorkouts={setWorkouts} fetchGoals={fetchGoals} />}
         {activeTab === "Goals" && <Goals goals={goals} setGoals={setGoals} />}
       </div>
-      {/* Floating Chatbot Button */}
-      <button
-        className={`fit2go-chatbot-fab${chatOpen ? ' hide' : ''}`}
-        onClick={() => setChatOpen(true)}
-        aria-label="Open Chatbot"
-      >💬</button>
       <Chatbot
         open={chatOpen}
         onClose={() => setChatOpen(false)}
@@ -1217,6 +1221,35 @@ const Fitness = () => {
         goals={goals}
         onGoalAdd={handleAddGoalFromChatbot}
       />
+      {/* Floating Chatbot Button */}
+      {!chatOpen && (
+        <button
+          style={{
+            position: 'fixed',
+            bottom: 30,
+            right: 30,
+            zIndex: 9998,
+            background: 'linear-gradient(135deg,#3B82F6,#8B5CF6)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '50%',
+            width: 60,
+            height: 60,
+            fontSize: 32,
+            boxShadow: '0 4px 16px rgba(59,130,246,0.18)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'box-shadow 0.2s, transform 0.2s',
+            animation: 'chat-fab-pop 0.5s',
+          }}
+          onClick={() => setChatOpen(true)}
+          aria-label="Open Chatbot"
+        >
+          <span style={{fontSize: 28}}>💬</span>
+        </button>
+      )}
     </div>
   );
 };

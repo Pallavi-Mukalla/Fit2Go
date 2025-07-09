@@ -355,10 +355,10 @@ const fetchRecipesByFilter = async (filter) => {
       <div className="logo">Fit2Go</div>
       <nav className="nav">
         <ul>
-          <li><a href="#">Dashboard</a></li>
-          <li><a href="#">Nutrition</a></li>
-          <li><a href="#">Workouts</a></li>
-          <li><a href="#">Progress</a></li>
+          <li><button onClick={() => navigate('/dashboard')}>Dashboard</button></li>
+          <li><button onClick={() => navigate('/nutrition')}>Nutrition</button></li>
+          <li><button onClick={() => navigate('/fitness')}>Workouts</button></li>
+          {/* <li><button onClick={() => navigate('/Chatbot')}>chatbot</button></li> */}
         </ul>
       </nav>
       <div
@@ -645,21 +645,45 @@ const fetchRecipesByFilter = async (filter) => {
       </div>
     )}
 
-    <button
-  className={`fit2go-chatbot-fab${isChatOpen ? ' hide' : ''}`}
-  onClick={() => setIsChatOpen(true)}
-  aria-label="Open Chatbot"
->
-  💬
-</button>
-<Chatbot
-  open={isChatOpen}
-  onClose={() => setIsChatOpen(false)}
-  user={user}
-  workouts={[]}
-  goals={[]}
-  onGoalAdd={handleAddGoalFromChatbot}
-/>
+    <Chatbot
+      open={isChatOpen}
+      onClose={() => setIsChatOpen(false)}
+      user={user}
+      meals={meals}
+      workouts={[]}
+      goals={[]}
+      onGoalAdd={handleAddGoalFromChatbot}
+    />
+
+    {/* Floating Chatbot Button */}
+    {!isChatOpen && (
+      <button
+        style={{
+          position: 'fixed',
+          bottom: 30,
+          right: 30,
+          zIndex: 9998,
+          background: 'linear-gradient(135deg,#3B82F6,#8B5CF6)',
+          color: 'white',
+          border: 'none',
+          borderRadius: '50%',
+          width: 60,
+          height: 60,
+          fontSize: 32,
+          boxShadow: '0 4px 16px rgba(59,130,246,0.18)',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'box-shadow 0.2s, transform 0.2s',
+          animation: 'chat-fab-pop 0.5s',
+        }}
+        onClick={() => setIsChatOpen(true)}
+        aria-label="Open Chatbot"
+      >
+        <span style={{fontSize: 28}}>💬</span>
+      </button>
+    )}
 
   </div>
   

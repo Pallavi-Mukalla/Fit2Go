@@ -42,9 +42,9 @@ const WorkoutPlanCard = ({ weeklyPlan, onWorkoutDone, onAddToCalendar }) => {
                   Exercises:
                   <ul style={{ margin: '6px 0 0 0', padding: 0, listStyle: 'none' }}>
                     {day.exercises.map((ex, idx) => (
-                      <li key={ex} style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+                      <li key={ex.name} style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
                         <video
-                          src={getDemoVideoUrl(ex)}
+                          src={getDemoVideoUrl(ex.name)}
                           width={48}
                           height={48}
                           style={{ borderRadius: 8, marginRight: 8, objectFit: 'cover', background: '#eee' }}
@@ -53,7 +53,7 @@ const WorkoutPlanCard = ({ weeklyPlan, onWorkoutDone, onAddToCalendar }) => {
                           muted
                           playsInline
                         />
-                        <span>{ex}</span>
+                        <span>{ex.name} - {ex.duration} min</span>
                         <label style={{ marginLeft: 10, cursor: 'pointer', color: '#3B82F6', fontWeight: 500, fontSize: 14 }}>
                           <input
                             type="file"
@@ -61,14 +61,14 @@ const WorkoutPlanCard = ({ weeklyPlan, onWorkoutDone, onAddToCalendar }) => {
                             style={{ display: 'none' }}
                             onChange={e => {
                               if (e.target.files && e.target.files[0]) {
-                                handleFormVideoUpload(ex, e.target.files[0]);
+                                handleFormVideoUpload(ex.name, e.target.files[0]);
                               }
                             }}
                           />
-                          {uploading[ex] ? 'Uploading...' : 'Check my form'}
+                          {uploading[ex.name] ? 'Uploading...' : 'Check my form'}
                         </label>
-                        {formFeedback[ex] && (
-                          <span style={{ marginLeft: 8, color: '#10B981', fontWeight: 500, fontSize: 13 }}>{formFeedback[ex]}</span>
+                        {formFeedback[ex.name] && (
+                          <span style={{ marginLeft: 8, color: '#10B981', fontWeight: 500, fontSize: 13 }}>{formFeedback[ex.name]}</span>
                         )}
                       </li>
                     ))}
