@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const axios = require('axios');
 dotenv.config();
 
 const app = express();
@@ -374,6 +375,36 @@ app.get('/api/weekly-plan', auth, async (req, res) => {
     };
   });
   res.json(plan);
+});
+
+// --- Workout Video Fetch Route ---
+app.get('/api/workout-video', async (req, res) => {
+  const { name } = req.query;
+  const apiKey = process.env.PEXELS_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: 'Pexels API key not configured.' });
+  }
+  try {
+    const response = await axios.get('https://api.pexels.com/videos/search', {
+      headers: { Authorization: apiKey },
+      params: { query: name, per_page: 1, orientation: 'landscape' }
+    });
+    const video = response.data.videos[0];
+    let videoUrl = null;
+    if (video && video.video_files) {
+      // Try to find a video file with duration <= 3 seconds
+      const shortClip = video.video_files.find(v => v.duration && v.duration <= 3);
+      videoUrl = shortClip ? shortClip.link : video.video_files[0]?.link;
+    }
+    // Fallback to a placeholder video if nothing found
+    if (!videoUrl) {
+      videoUrl = 'https://www.w3schools.com/html/mov_bbb.mp4';
+    }
+    res.json({ videoUrl });
+  } catch (err) {
+    console.error('Error fetching workout video:', err.message);
+    res.json({ videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4' });
+  }
 });
 
 const PORT = process.env.PORT || 5000;
