@@ -1196,7 +1196,6 @@ const Fitness = () => {
 
       <div className="container">
         <h2 className="dashboard-title">Your Fitness Dashboard</h2>
-        <WorkoutPlanCard weeklyPlan={weeklyPlan} onWorkoutDone={handleWorkoutDone} onAddToCalendar={handleAddToCalendar} />
         <DashboardStats workouts={workouts} goals={goals} />
         <div className="tabs">
           {["Progress Tracking", "Workout Logs", "Goals"].map(tab => (
@@ -1212,7 +1211,11 @@ const Fitness = () => {
         {activeTab === "Progress Tracking" && <ProgressTracking goals={goals} workouts={workouts} />}
         {activeTab === "Workout Logs" && <WorkoutLogs workouts={workouts} setWorkouts={setWorkouts} fetchGoals={fetchGoals} />}
         {activeTab === "Goals" && <Goals goals={goals} setGoals={setGoals} />}
+        <br/>
+        <WorkoutPlanCard weeklyPlan={weeklyPlan} onWorkoutDone={handleWorkoutDone} onAddToCalendar={handleAddToCalendar} />
+
       </div>
+      
       <Chatbot
         open={chatOpen}
         onClose={() => setChatOpen(false)}

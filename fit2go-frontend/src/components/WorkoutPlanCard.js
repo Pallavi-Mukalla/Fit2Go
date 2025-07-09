@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 // Helper to get a placeholder or generated video URL for an exercise
 const getDemoVideoUrl = (exercise) => {
@@ -11,6 +11,15 @@ const getDemoVideoUrl = (exercise) => {
 const WorkoutPlanCard = ({ weeklyPlan, onWorkoutDone, onAddToCalendar }) => {
   const [formFeedback, setFormFeedback] = useState({}); // { exercise: feedback }
   const [uploading, setUploading] = useState({}); // { exercise: bool }
+  const [videoUrls, setVideoUrls] = useState({}); // { [exerciseName]: url }
+
+  // Normalize exercises: always objects with name and duration
+  const normalizedWeeklyPlan = weeklyPlan.map(day => ({
+    ...day,
+    exercises: day.exercises.map(ex =>
+      typeof ex === 'string' ? { name: ex, duration: '' } : ex
+    )
+  }));
 
   const handleFormVideoUpload = async (exercise, file) => {
     setUploading((prev) => ({ ...prev, [exercise]: true }));
@@ -22,6 +31,26 @@ const WorkoutPlanCard = ({ weeklyPlan, onWorkoutDone, onAddToCalendar }) => {
     }, 1500);
   };
 
+  useEffect(() => {
+    // Gather all unique exercise names from the normalizedWeeklyPlan
+    const allExercises = [];
+    normalizedWeeklyPlan.forEach(day => {
+      day.exercises.forEach(ex => {
+        if (!allExercises.includes(ex.name)) {
+          allExercises.push(ex.name);
+        }
+      });
+    });
+
+    allExercises.forEach(exName => {
+      fetch(`http://localhost:5000/api/workout-video?name=${encodeURIComponent(exName)}`)
+        .then(res => res.json())
+        .then(data => {
+          setVideoUrls(prev => ({ ...prev, [exName]: data.videoUrl }));
+        });
+    });
+  }, [weeklyPlan]);
+
   const today = new Date();
   const weekStart = new Date(today);
   weekStart.setDate(today.getDate() - today.getDay() + 1); // Monday
@@ -29,7 +58,7 @@ const WorkoutPlanCard = ({ weeklyPlan, onWorkoutDone, onAddToCalendar }) => {
     <div className="workout-plan-card" style={{ boxShadow: '0 4px 24px rgba(59,130,246,0.10)', borderRadius: 18, background: '#fff', marginBottom: 32, padding: 24 }}>
       <h3 style={{ marginBottom: 18, color: '#3B82F6', fontWeight: 700 }}>This Week's Workout Plan</h3>
       <div className="workout-plan-list">
-        {weeklyPlan.map((day, i) => {
+        {normalizedWeeklyPlan.map((day, i) => {
           const workoutDate = new Date(weekStart);
           workoutDate.setDate(weekStart.getDate() + i);
           const isPast = workoutDate < new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -44,7 +73,7 @@ const WorkoutPlanCard = ({ weeklyPlan, onWorkoutDone, onAddToCalendar }) => {
                     {day.exercises.map((ex, idx) => (
                       <li key={ex.name} style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
                         <video
-                          src={getDemoVideoUrl(ex.name)}
+                          src={videoUrls[ex.name]}
                           width={48}
                           height={48}
                           style={{ borderRadius: 8, marginRight: 8, objectFit: 'cover', background: '#eee' }}
@@ -52,6 +81,7 @@ const WorkoutPlanCard = ({ weeklyPlan, onWorkoutDone, onAddToCalendar }) => {
                           loop
                           muted
                           playsInline
+                          poster="https://via.placeholder.com/48x48?text=No+Video"
                         />
                         <span>{ex.name} - {ex.duration} min</span>
                         <label style={{ marginLeft: 10, cursor: 'pointer', color: '#3B82F6', fontWeight: 500, fontSize: 14 }}>
