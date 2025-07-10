@@ -4,7 +4,8 @@
   "main": "importData.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "test-groq": "node test-groq.js"
   },
   "keywords": [],
   "author": "",
@@ -16,9 +17,12 @@
     "csvtojson": "^2.0.10",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
+    "groq-sdk": "^0.26.0",
     "jsonwebtoken": "^9.0.2",
     "jwt-simple": "^0.5.6",
-    "mongoose": "^8.14.1"
+    "mongoose": "^8.14.1",
+    "multer": "^2.0.1",
+    "node-fetch": "^3.3.2"
   },
   "description": ""
 }

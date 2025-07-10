@@ -8,10 +8,30 @@ const getDemoVideoUrl = (exercise) => {
   return 'https://www.w3schools.com/html/mov_bbb.mp4'; // Placeholder video
 };
 
+// Helper: Send file to Groq Cloud API for pose analysis
+async function checkPoseWithGroqAPI(file, exercise) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('exercise', exercise);
+  // Replace with your actual Groq Cloud API endpoint
+  const apiUrl = 'http://localhost:5000/api/groq-pose';
+  const response = await fetch(apiUrl, {
+    method: 'POST',
+    body: formData,
+  });
+  if (!response.ok) {
+    throw new Error('Groq API error: ' + response.statusText);
+  }
+  const data = await response.json();
+  // Expecting { result: 'good' | 'needs_improvement' | 'error', message: string }
+  return data;
+}
+
 const WorkoutPlanCard = ({ weeklyPlan, onWorkoutDone, onAddToCalendar }) => {
-  const [formFeedback, setFormFeedback] = useState({}); // { exercise: feedback }
+  const [formFeedback, setFormFeedback] = useState({}); // { exercise: { result, message, timestamp } }
   const [uploading, setUploading] = useState({}); // { exercise: bool }
   const [videoUrls, setVideoUrls] = useState({}); // { [exerciseName]: url }
+  const [showDetailedFeedback, setShowDetailedFeedback] = useState({}); // { exercise: bool }
 
   // Normalize exercises: always objects with name and duration
   const normalizedWeeklyPlan = weeklyPlan.map(day => ({
@@ -23,12 +43,52 @@ const WorkoutPlanCard = ({ weeklyPlan, onWorkoutDone, onAddToCalendar }) => {
 
   const handleFormVideoUpload = async (exercise, file) => {
     setUploading((prev) => ({ ...prev, [exercise]: true }));
-    // TODO: Integrate with AI form correction API
-    // For now, simulate feedback
-    setTimeout(() => {
-      setFormFeedback((prev) => ({ ...prev, [exercise]: 'Good form! (demo)' }));
-      setUploading((prev) => ({ ...prev, [exercise]: false }));
-    }, 1500);
+    try {
+      const result = await checkPoseWithGroqAPI(file, exercise);
+      setFormFeedback((prev) => ({ 
+        ...prev, 
+        [exercise]: {
+          result: result.result,
+          message: result.message,
+          timestamp: new Date().toLocaleTimeString()
+        }
+      }));
+    } catch (err) {
+      setFormFeedback((prev) => ({ 
+        ...prev, 
+        [exercise]: {
+          result: 'error',
+          message: 'Error analyzing form: ' + (err.message || 'Unknown error'),
+          timestamp: new Date().toLocaleTimeString()
+        }
+      }));
+    }
+    setUploading((prev) => ({ ...prev, [exercise]: false }));
+  };
+
+  const getFeedbackColor = (result) => {
+    switch (result) {
+      case 'good': return '#10B981';
+      case 'needs_improvement': return '#F59E0B';
+      case 'error': return '#EF4444';
+      default: return '#6B7280';
+    }
+  };
+
+  const getFeedbackIcon = (result) => {
+    switch (result) {
+      case 'good': return '✅';
+      case 'needs_improvement': return '⚠️';
+      case 'error': return '❌';
+      default: return '❓';
+    }
+  };
+
+  const getFeedbackSummary = (result, message) => {
+    if (result === 'good') return 'Good form!';
+    if (result === 'needs_improvement') return 'Form needs improvement';
+    if (result === 'error') return 'Analysis failed';
+    return 'No analysis yet';
   };
 
   useEffect(() => {
@@ -43,10 +103,17 @@ const WorkoutPlanCard = ({ weeklyPlan, onWorkoutDone, onAddToCalendar }) => {
     });
 
     allExercises.forEach(exName => {
-      fetch(`http://localhost:5000/api/workout-video?name=${encodeURIComponent(exName)}`)
-        .then(res => res.json())
+      fetch(`/api/workout-video?name=${encodeURIComponent(exName)}`)
+        .then(res => {
+          if (!res.ok) throw new Error('Network response was not ok');
+          return res.json();
+        })
         .then(data => {
           setVideoUrls(prev => ({ ...prev, [exName]: data.videoUrl }));
+        })
+        .catch(err => {
+          setVideoUrls(prev => ({ ...prev, [exName]: 'https://www.w3schools.com/html/mov_bbb.mp4' }));
+          console.error('Error fetching video:', err);
         });
     });
   }, [weeklyPlan]);
@@ -81,13 +148,12 @@ const WorkoutPlanCard = ({ weeklyPlan, onWorkoutDone, onAddToCalendar }) => {
                           loop
                           muted
                           playsInline
-                          poster="https://via.placeholder.com/48x48?text=No+Video"
                         />
                         <span>{ex.name} - {ex.duration} min</span>
                         <label style={{ marginLeft: 10, cursor: 'pointer', color: '#3B82F6', fontWeight: 500, fontSize: 14 }}>
                           <input
                             type="file"
-                            accept="video/*"
+                            accept="image/*"
                             style={{ display: 'none' }}
                             onChange={e => {
                               if (e.target.files && e.target.files[0]) {
@@ -95,10 +161,45 @@ const WorkoutPlanCard = ({ weeklyPlan, onWorkoutDone, onAddToCalendar }) => {
                               }
                             }}
                           />
-                          {uploading[ex.name] ? 'Uploading...' : 'Check my form'}
+                          {uploading[ex.name] ? 'Analyzing...' : 'Check my form'}
                         </label>
                         {formFeedback[ex.name] && (
-                          <span style={{ marginLeft: 8, color: '#10B981', fontWeight: 500, fontSize: 13 }}>{formFeedback[ex.name]}</span>
+                          <div style={{ marginLeft: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span style={{ color: getFeedbackColor(formFeedback[ex.name].result), fontWeight: 500, fontSize: 13 }}>
+                              {getFeedbackIcon(formFeedback[ex.name].result)} {getFeedbackSummary(formFeedback[ex.name].result, formFeedback[ex.name].message)}
+                            </span>
+                            <button
+                              onClick={() => setShowDetailedFeedback(prev => ({ ...prev, [ex.name]: !prev[ex.name] }))}
+                              style={{ 
+                                background: 'none', 
+                                border: 'none', 
+                                color: '#3B82F6', 
+                                cursor: 'pointer', 
+                                fontSize: 12,
+                                textDecoration: 'underline'
+                              }}
+                            >
+                              {showDetailedFeedback[ex.name] ? 'Hide details' : 'Show details'}
+                            </button>
+                          </div>
+                        )}
+                        {formFeedback[ex.name] && showDetailedFeedback[ex.name] && (
+                          <div style={{ 
+                            marginTop: 8, 
+                            marginLeft: 56, 
+                            padding: 12, 
+                            background: '#F8FAFC', 
+                            borderRadius: 8, 
+                            border: '1px solid #E2E8F0',
+                            fontSize: 13,
+                            color: '#374151',
+                            whiteSpace: 'pre-line'
+                          }}>
+                            <div style={{ fontWeight: 600, marginBottom: 4, color: getFeedbackColor(formFeedback[ex.name].result) }}>
+                              Form Analysis ({formFeedback[ex.name].timestamp})
+                            </div>
+                            {formFeedback[ex.name].message}
+                          </div>
                         )}
                       </li>
                     ))}
