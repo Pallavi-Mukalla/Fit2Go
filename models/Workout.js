@@ -11,4 +11,15 @@ const workoutSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('Workout', workoutSchema);
+const workoutPlanSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  plan: { type: Object, required: true }, // The actual workout plan (can be array or object)
+  generatedAt: { type: Date, default: Date.now },
+});
+
+const WorkoutPlan = mongoose.model('WorkoutPlan', workoutPlanSchema);
+
+module.exports = {
+  Workout: mongoose.model('Workout', workoutSchema),
+  WorkoutPlan
+};

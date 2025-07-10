@@ -1,6 +1,27 @@
 const express = require('express');
 const router = express.Router();
 
+// Simple in-memory cache for Pexels video URLs
+const pexelsVideoCache = {};
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+// Simple in-memory cache for workout videos
+const workoutVideoCache = {};
+const WORKOUT_VIDEO_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+async function getCachedPexelsVideo(exerciseName, fetchVideoFn) {
+  const now = Date.now();
+  if (
+    pexelsVideoCache[exerciseName] &&
+    (now - pexelsVideoCache[exerciseName].timestamp < CACHE_TTL)
+  ) {
+    return pexelsVideoCache[exerciseName].url;
+  }
+  const url = await fetchVideoFn();
+  pexelsVideoCache[exerciseName] = { url, timestamp: now };
+  return url;
+}
+
 router.post('/', async (req, res) => {
   const { filter } = req.body;
   console.log('Received filter from frontend:', filter);
@@ -61,6 +82,15 @@ Example: [{"name":"...", "description":"...", "kcal":100, "protein":10, "carbs":
     console.error('Error fetching from Gemini:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
+});
+
+router.get('/workout-video', async (req, res) => {
+  const { name } = req.query;
+  const url = await getCachedPexelsVideo(name, async () => {
+    // ... your existing logic to fetch from Pexels API ...
+    return fetchedVideoUrl;
+  });
+  res.json({ videoUrl: url });
 });
 
 module.exports = router;

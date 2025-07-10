@@ -20,8 +20,51 @@ function isMealRecommendationRequest(text) {
   ];
   return mealKeywords.some(k => lower.includes(k));
 }
+function isRecentWorkoutRequest(text) {
+  const lower = text.toLowerCase();
+  return (
+    lower.includes('recent workout') ||
+    lower.includes('last workout') ||
+    lower.includes('most recent workout') ||
+    lower.includes('previous workout')
+  );
+}
+function isRecentMealRequest(text) {
+  const lower = text.toLowerCase();
+  return (
+    lower.includes('recent meal') ||
+    lower.includes('last meal') ||
+    lower.includes('most recent meal') ||
+    lower.includes('previous meal')
+  );
+}
+function isGoalRequest(text) {
+  const lower = text.toLowerCase();
+  return (
+    lower.includes('my goals') ||
+    lower.includes('current goals') ||
+    lower.includes('what are my goals') ||
+    lower.includes('show my goals')
+  );
+}
+function isProteinIntakeRequest(text) {
+  const lower = text.toLowerCase();
+  return lower.includes('protein intake') || lower.includes('how much protein') || lower.includes('protein today');
+}
+function isCarbIntakeRequest(text) {
+  const lower = text.toLowerCase();
+  return lower.includes('carb intake') || lower.includes('how many carbs') || lower.includes('carbs today');
+}
+function isFatIntakeRequest(text) {
+  const lower = text.toLowerCase();
+  return lower.includes('fat intake') || lower.includes('how much fat') || lower.includes('fat today');
+}
+function isCalorieIntakeRequest(text) {
+  const lower = text.toLowerCase();
+  return lower.includes('calorie intake') || lower.includes('how many calories') || lower.includes('calories today');
+}
 
-const Chatbot = ({ open, onClose, user, workouts, goals, meals, onGoalAdd, onMealAdd }) => {
+const Chatbot = ({ open, onClose, user, workouts, goals, meals, onGoalAdd, onMealAdd, waterIntake, totalProtein, totalCarbs, totalFat, consumedCalories }) => {
   const [messages, setMessages] = useState([
     { from: 'bot', text: `Hi${user?.name ? ', ' + user.name.split(' ')[0] : ''}! I am your Fit2Go AI assistant. How can I help you with your fitness today?` }
   ]);
@@ -30,12 +73,60 @@ const Chatbot = ({ open, onClose, user, workouts, goals, meals, onGoalAdd, onMea
   const [pendingWorkout, setPendingWorkout] = useState(null);
   const [pendingMeal, setPendingMeal] = useState(null);
   const messagesEndRef = useRef(null);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef(null);
 
   useEffect(() => {
     if (open && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, open]);
+
+  // --- Text-to-Speech (TTS) ---
+  const speak = (text) => {
+    if ('speechSynthesis' in window) {
+      const utterance = new window.SpeechSynthesisUtterance(text);
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  // --- Speech-to-Text (STT) ---
+  const startListening = () => {
+    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      alert('Speech recognition is not supported in this browser.');
+      return;
+    }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setInput(transcript);
+    };
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => setIsListening(false);
+    recognitionRef.current = recognition;
+    setIsListening(true);
+    recognition.start();
+  };
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    }
+  };
+
+  // --- Speak bot responses ---
+  useEffect(() => {
+    if (messages.length > 0 && messages[messages.length - 1].from === 'bot') {
+      speak(messages[messages.length - 1].text);
+    }
+    // eslint-disable-next-line
+  }, [messages]);
 
   const fetchGeminiResponse = async (prompt) => {
     setLoading(true);
@@ -62,6 +153,59 @@ const Chatbot = ({ open, onClose, user, workouts, goals, meals, onGoalAdd, onMea
   const handleSend = async () => {
     if (!input.trim()) return;
     setMessages([...messages, { from: 'user', text: input }]);
+    // --- Direct context answers ---
+    if (isRecentWorkoutRequest(input)) {
+      if (workouts && workouts.length > 0) {
+        // Sort by date descending (ISO format)
+        const sorted = [...workouts].sort((a, b) => (b.date > a.date ? 1 : -1));
+        const recent = sorted[0];
+        setMessages(msgs => [
+          ...msgs,
+          { from: 'bot', text: `Your most recent workout was on ${recent.date}: ${recent.type} for ${recent.duration} min, ${recent.calories} calories.` }
+        ]);
+      } else {
+        setMessages(msgs => [
+          ...msgs,
+          { from: 'bot', text: "I couldn't find any recent workouts in your history." }
+        ]);
+      }
+      setInput('');
+      return;
+    }
+    if (isRecentMealRequest(input)) {
+      if (meals && meals.length > 0) {
+        // Sort by date descending if available, else use order
+        const sorted = meals[0].date ? [...meals].sort((a, b) => (b.date > a.date ? 1 : -1)) : meals;
+        const recent = sorted[0];
+        setMessages(msgs => [
+          ...msgs,
+          { from: 'bot', text: `Your most recent meal was${recent.date ? ' on ' + recent.date : ''}: ${recent.name || recent.title} (${recent.kcal || '?'} kcal, P: ${recent.protein || '?'}g, C: ${recent.carbs || '?'}g, F: ${recent.fat || '?'}g).` }
+        ]);
+      } else {
+        setMessages(msgs => [
+          ...msgs,
+          { from: 'bot', text: "I couldn't find any recent meals in your history." }
+        ]);
+      }
+      setInput('');
+      return;
+    }
+    if (isGoalRequest(input)) {
+      if (goals && goals.length > 0) {
+        const lines = goals.map(g => `• ${g.type} goal: ${g.target} ${g.unit}${g.description ? ' (' + g.description + ')' : ''}${g.achieved ? ' [Achieved]' : ''}`);
+        setMessages(msgs => [
+          ...msgs,
+          { from: 'bot', text: `Here are your current goals:\n${lines.join('\n')}` }
+        ]);
+      } else {
+        setMessages(msgs => [
+          ...msgs,
+          { from: 'bot', text: "You don't have any goals set yet." }
+        ]);
+      }
+      setInput('');
+      return;
+    }
     if (pendingWorkout && input.toLowerCase().startsWith('yes')) {
       if (onGoalAdd) {
         await onGoalAdd(pendingWorkout);
@@ -92,24 +236,53 @@ const Chatbot = ({ open, onClose, user, workouts, goals, meals, onGoalAdd, onMea
       setInput('');
       return;
     }
-    if (isWorkoutRecommendationRequest(input)) {
-      const prompt = `Suggest a personalized workout for this user: ${user?.name || ''}, goals: ${goals.map(g=>g.type+':'+g.target+' '+g.unit).join(', ')}, recent workouts: ${workouts.slice(0,3).map(w=>w.type+ ' on '+w.date).join(', ')}. Reply with a short workout plan (type, duration, and a motivating title).`;
-      const aiResponse = await fetchGeminiResponse(prompt);
-      const match = aiResponse.match(/(\w+)(?: workout| session| routine)?[,\s]+(\d+)[- ]?(minutes|min)?/i);
-      let workout = null;
-      if (match) {
-        workout = {
-          type: match[1],
-          duration: parseInt(match[2]),
-          title: aiResponse.split('\n')[0] || `${match[1]} for ${match[2]} min`,
-          date: new Date().toISOString().slice(0,10)
-        };
-      }
-      setMessages(msgs => [...msgs, { from: 'bot', text: aiResponse + (workout ? '\n\nWould you like to add this as a goal? (yes/no)' : '') }]);
-      if (workout) setPendingWorkout(workout);
+    // --- Nutrition detail queries: check BEFORE meal recommendation ---
+    if (isProteinIntakeRequest(input)) {
+      const protein = typeof totalProtein === 'number' ? totalProtein : meals.reduce((sum, meal) => sum + (meal.protein || 0), 0);
+      setMessages(msgs => [
+        ...msgs,
+        { from: 'bot', text: `Your total protein intake today is ${protein}g.` }
+      ]);
       setInput('');
       return;
     }
+    if (isCarbIntakeRequest(input)) {
+      const carbs = typeof totalCarbs === 'number' ? totalCarbs : meals.reduce((sum, meal) => sum + (meal.carbs || 0), 0);
+      setMessages(msgs => [
+        ...msgs,
+        { from: 'bot', text: `Your total carb intake today is ${carbs}g.` }
+      ]);
+      setInput('');
+      return;
+    }
+    if (isFatIntakeRequest(input)) {
+      const fat = typeof totalFat === 'number' ? totalFat : meals.reduce((sum, meal) => sum + (meal.fat || 0), 0);
+      setMessages(msgs => [
+        ...msgs,
+        { from: 'bot', text: `Your total fat intake today is ${fat}g.` }
+      ]);
+      setInput('');
+      return;
+    }
+    if (isCalorieIntakeRequest(input)) {
+      const calories = typeof consumedCalories === 'number' ? consumedCalories : meals.reduce((sum, meal) => sum + (meal.kcal || 0), 0);
+      setMessages(msgs => [
+        ...msgs,
+        { from: 'bot', text: `Your total calorie intake today is ${calories}kcal.` }
+      ]);
+      setInput('');
+      return;
+    }
+    if (input.toLowerCase().includes('water intake') || input.toLowerCase().includes('how much water')) {
+      const water = typeof waterIntake === 'number' ? waterIntake : 0;
+      setMessages(msgs => [
+        ...msgs,
+        { from: 'bot', text: `Your total water intake today is ${water} liters.` }
+      ]);
+      setInput('');
+      return;
+    }
+    // --- Meal recommendation (after nutrition details) ---
     if (isMealRecommendationRequest(input)) {
       // Try to extract a goal from the user's input
       const lowerInput = input.toLowerCase();
@@ -136,6 +309,24 @@ const Chatbot = ({ open, onClose, user, workouts, goals, meals, onGoalAdd, onMea
       }
       setMessages(msgs => [...msgs, { from: 'bot', text: aiResponse + (meal ? '\n\nWould you like to add this to your meal plan? (yes/no)' : '') }]);
       if (meal) setPendingMeal(meal);
+      setInput('');
+      return;
+    }
+    if (isWorkoutRecommendationRequest(input)) {
+      const prompt = `Suggest a personalized workout for this user: ${user?.name || ''}, goals: ${goals.map(g=>g.type+':'+g.target+' '+g.unit).join(', ')}, recent workouts: ${workouts.slice(0,3).map(w=>w.type+ ' on '+w.date).join(', ')}. Reply with a short workout plan (type, duration, and a motivating title).`;
+      const aiResponse = await fetchGeminiResponse(prompt);
+      const match = aiResponse.match(/(\w+)(?: workout| session| routine)?[,\s]+(\d+)[- ]?(minutes|min)?/i);
+      let workout = null;
+      if (match) {
+        workout = {
+          type: match[1],
+          duration: parseInt(match[2]),
+          title: aiResponse.split('\n')[0] || `${match[1]} for ${match[2]} min`,
+          date: new Date().toISOString().slice(0,10)
+        };
+      }
+      setMessages(msgs => [...msgs, { from: 'bot', text: aiResponse + (workout ? '\n\nWould you like to add this as a goal? (yes/no)' : '') }]);
+      if (workout) setPendingWorkout(workout);
       setInput('');
       return;
     }
@@ -267,6 +458,28 @@ const Chatbot = ({ open, onClose, user, workouts, goals, meals, onGoalAdd, onMea
           onClick={handleSend}
           disabled={loading || !input.trim()}
         >Send</button>
+        <button
+          style={{
+            marginLeft: 8,
+            background: isListening ? '#3B82F6' : '#e0e7ff',
+            color: isListening ? 'white' : '#333',
+            border: 'none',
+            borderRadius: '50%',
+            width: 40,
+            height: 40,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 20,
+            boxShadow: isListening ? '0 2px 8px #3B82F6' : '0 2px 8px #e0e7ff',
+            cursor: 'pointer',
+            transition: 'background 0.2s, color 0.2s'
+          }}
+          onClick={isListening ? stopListening : startListening}
+          title={isListening ? 'Stop Listening' : 'Speak'}
+        >
+          {isListening ? '🎤' : '🎙️'}
+        </button>
       </div>
     </div>
   );

@@ -43,6 +43,9 @@ const [recommendedRecipes, setRecommendedRecipes] = useState([]);
 const [isLoadingRecipes, setIsLoadingRecipes] = useState(false);
 const [searchQuery, setSearchQuery] = useState('');
 
+const [workouts, setWorkouts] = useState([]);
+const [goals, setGoals] = useState([]);
+
 
   useEffect(() => {
   async function fetchProfile() {
@@ -65,12 +68,61 @@ const [searchQuery, setSearchQuery] = useState('');
       console.error('Error fetching profile:', error);
     }
   }
-
   fetchProfile();
 }, []);
+  useEffect(() => {
+    async function fetchMeals() {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      try {
+        const res = await fetch('http://localhost:5000/api/meals', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setMeals(data);
+        }
+      } catch (err) {
+        console.error('Error fetching meals:', err);
+      }
+    }
+    async function fetchWorkouts() {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      try {
+        const res = await fetch('http://localhost:5000/api/workouts', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setWorkouts(data);
+        }
+      } catch (err) {
+        console.error('Error fetching workouts:', err);
+      }
+    }
+    async function fetchGoals() {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      try {
+        const res = await fetch('http://localhost:5000/api/goals', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setGoals(data);
+        }
+      } catch (err) {
+        console.error('Error fetching goals:', err);
+      }
+    }
+ 
+       fetchMeals();
+    fetchWorkouts();
+    fetchGoals();
+  }, []);
 
 const [isChatOpen, setIsChatOpen] = useState(false);
-const [goals, setGoals] = useState([]);
 
 
 // Handler to add a goal from chatbot
@@ -111,27 +163,6 @@ const handleAddGoalFromChatbot = async (goal) => {
     console.error('Error adding goal:', err.message);
   }
 };
-
-useEffect(() => {
-  async function fetchMeals() {
-  const token = localStorage.getItem('token');
-  if (!token) return;
-
-  try {
-    const res = await fetch('http://localhost:5000/api/meals', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (res.ok) {
-      const data = await res.json();
-      setMeals(data);
-    }
-  } catch (err) {
-    console.error('Error fetching meals:', err);
-  }
-}
-
-fetchMeals();
-}, []);
 
 useEffect(() => {
   async function fetchWater() {
@@ -345,6 +376,7 @@ const fetchRecipesByFilter = async (filter) => {
   } finally {
     setIsLoadingRecipes(false);
   }
+
 };
 
 
@@ -574,7 +606,7 @@ const fetchRecipesByFilter = async (filter) => {
               }}
             >
               Add to Meals
-            </button>
+         </button>
 
           </div>
         </div>
@@ -650,9 +682,14 @@ const fetchRecipesByFilter = async (filter) => {
       onClose={() => setIsChatOpen(false)}
       user={user}
       meals={meals}
-      workouts={[]}
-      goals={[]}
+      workouts={workouts}
+      goals={goals}
       onGoalAdd={handleAddGoalFromChatbot}
+      waterIntake={waterIntakeEntries.reduce((sum, entry) => sum + entry.amount, 0)}
+      totalProtein={totalProtein}
+      totalCarbs={totalCarbs}
+      totalFat={totalFat}
+      consumedCalories={consumedCalories}
     />
 
     {/* Floating Chatbot Button */}
@@ -686,9 +723,7 @@ const fetchRecipesByFilter = async (filter) => {
     )}
 
   </div>
-  
-);
-
-}
+  );
+  }
 
 export default Nutrition;

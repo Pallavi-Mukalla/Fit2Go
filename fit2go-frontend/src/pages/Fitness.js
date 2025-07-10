@@ -1052,15 +1052,8 @@ const Fitness = () => {
   const [goals, setGoals] = useState([]); // Start with empty, fetch from backend
   const [user, setUser] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
-  const [weeklyPlan, setWeeklyPlan] = useState([
-    { day: 'Monday', type: 'Strength', duration: 60, exercises: ['Squats', 'Deadlifts', 'Bench Press'], done: false },
-    { day: 'Tuesday', type: 'Yoga', duration: 45, exercises: ['Sun Salutation', 'Warrior Flow'], done: false },
-    { day: 'Wednesday', type: 'Cardio', duration: 45, exercises: ['HIIT Sprints', 'Jump Rope'], done: false },
-    { day: 'Thursday', type: 'Active Recovery', duration: 30, exercises: ['Walking', 'Stretching'], done: false },
-    { day: 'Friday', type: 'Strength & Sculpt', duration: 60, exercises: ['Lunges', 'Shoulder Press'], done: false },
-    { day: 'Saturday', type: 'Full-Body', duration: 60, exercises: ['Burpees', 'Plank', 'Pushups'], done: false },
-    { day: 'Sunday', type: 'Mobility', duration: 30, exercises: ['Yoga Flow', 'Foam Rolling'], done: false },
-  ]);
+  const [weeklyPlan, setWeeklyPlan] = useState([]); // Start empty, will fetch from backend
+  const [meals, setMeals] = useState([]); // Add meals state
 
   async function fetchGoals() {
     const token = localStorage.getItem('token');
@@ -1097,9 +1090,45 @@ const Fitness = () => {
         setWorkouts(data);
       }
     }
+    async function fetchMeals() {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const res = await fetch('http://localhost:5000/api/meals', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMeals(data);
+      }
+    }
+    async function fetchWeeklyPlan() {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const res = await fetch('http://localhost:5000/api/workout-plan', {
+        method : 'GET', 
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // If the plan is in data.days, adapt to expected structure for WorkoutPlanCard
+        if (data.days) {
+          setWeeklyPlan(data.days.map(day => ({
+            day: day.day,
+            type: day.workout || day.type || '',
+            duration: day.duration || 0,
+            exercises: day.exercises || [day.workout || day.type || ''],
+            done: false
+          })));
+        } else {
+          setWeeklyPlan([]);
+        }
+      }
+    }
     fetchProfile();
     fetchWorkouts();
     fetchGoals();
+    fetchMeals();
+    fetchWeeklyPlan();
   }, []);
 
   // Handler to add a goal from chatbot
@@ -1222,6 +1251,8 @@ const Fitness = () => {
         user={user}
         workouts={workouts}
         goals={goals}
+        meals={meals}
+        
         onGoalAdd={handleAddGoalFromChatbot}
       />
       {/* Floating Chatbot Button */}
