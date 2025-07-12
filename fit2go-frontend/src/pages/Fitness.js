@@ -383,6 +383,22 @@ const Header = ({ user }) => {
                 transition: 'background 0.2s',
                 textAlign: 'left',
               }}
+              onClick={e => { e.stopPropagation(); navigate('/profile'); setShowDropdown(false); }}
+              onMouseOver={e => e.currentTarget.style.background = '#f5f5f5'}
+              onMouseOut={e => e.currentTarget.style.background = 'white'}
+            >
+              Profile
+            </span>
+            <span
+              style={{
+                padding: '10px 20px',
+                cursor: 'pointer',
+                color: '#333',
+                fontWeight: 500,
+                borderRadius: '4px',
+                transition: 'background 0.2s',
+                textAlign: 'left',
+              }}
               onClick={e => { e.stopPropagation(); handleLogout(); }}
               onMouseOver={e => e.currentTarget.style.background = '#f5f5f5'}
               onMouseOut={e => e.currentTarget.style.background = 'white'}

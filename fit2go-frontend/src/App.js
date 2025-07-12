@@ -6,6 +6,7 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/dashboard';
 import Fitness from './pages/Fitness';
 import Nutrition from './pages/Nutrition';
+import Profile from './pages/Profile';
 
 // PrivateRoute component
 const PrivateRoute = ({ children }) => {
@@ -25,6 +26,7 @@ const App = () => {
         <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
         <Route path="/Fitness" element={<PrivateRoute><Fitness /></PrivateRoute>} />
         <Route path="/Nutrition" element={<PrivateRoute><Nutrition /></PrivateRoute>} />
+        <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
       </Routes>
     </div>
   );

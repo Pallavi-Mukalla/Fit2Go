@@ -83,6 +83,35 @@ app.get('/profile', auth, async (req, res) => {
   }
 });
 
+// Password reset endpoint
+app.post('/api/reset-password', auth, async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+    
+    if (!newPassword || newPassword.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters long' });
+    }
+
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Hash the new password
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    // Update the user's password
+    user.password = hashedPassword;
+    await user.save();
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error while resetting password', error: err.message });
+  }
+});
+
 const mealsRoute = require('./routes/meals');
 app.use('/api/meals', mealsRoute);
 
