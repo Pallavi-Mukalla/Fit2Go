@@ -168,6 +168,40 @@ function Nutrition() {
     fetchGoals();
   }, []);
 
+ const handleMealAdd = async (meal) => {
+  const text = (meal.description || '') + ' ' + (meal.title || '');
+
+  // Try to decide which tab
+  let tab = "Lunch"; // default
+  if (/breakfast/i.test(text)) tab = "Breakfast";
+  else if (/dinner|supper/i.test(text)) tab = "Dinner";
+  else if (/snack|nuts|parfait|yogurt|smoothie/i.test(text)) tab = "Snacks";
+  else if (/lunch/i.test(text)) tab = "Lunch";
+
+  // Extract numbers
+  const proteinMatch = text.match(/P:\s*(\d+)/i);
+  const carbsMatch = text.match(/C:\s*(\d+)/i);
+  const fatMatch = text.match(/F:\s*(\d+)/i);
+  const kcalMatch = text.match(/(\d+)\s*kcal/i);
+
+  const mealWithParsed = {
+    ...meal,
+    name: meal.title || meal.name || "Suggested Meal",
+    tab,
+    protein: proteinMatch ? parseInt(proteinMatch[1]) : 0,
+    carbs: carbsMatch ? parseInt(carbsMatch[1]) : 0,
+    fat: fatMatch ? parseInt(fatMatch[1]) : 0,
+    kcal: kcalMatch ? parseInt(kcalMatch[1]) : 0,
+    checked: false,
+    date: new Date().toISOString().slice(0,10)
+  };
+
+  console.log("Meal added:", mealWithParsed);
+  setMeals(prev => [...prev, mealWithParsed]);
+};
+
+
+
   // Copy yesterday's meals
   const handleCopyYesterdayMeals = async () => {
     const token = localStorage.getItem('token');
@@ -912,6 +946,8 @@ function Nutrition() {
         workouts={workouts}
         goals={goals}
         onGoalAdd={handleAddGoalFromChatbot}
+        setMeals={setMeals}  
+         onMealAdd={handleMealAdd}
         waterIntake={dailyWater}
         totalProtein={totalProtein}
         totalCarbs={totalCarbs}

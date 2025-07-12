@@ -64,7 +64,7 @@ function isCalorieIntakeRequest(text) {
   return lower.includes('calorie intake') || lower.includes('how many calories') || lower.includes('calories today');
 }
 
-const Chatbot = ({ open, onClose, user, workouts, goals, meals, onGoalAdd, onMealAdd, waterIntake, totalProtein, totalCarbs, totalFat, consumedCalories }) => {
+const Chatbot = ({ open, onClose, user, workouts, goals, meals,setMeals, onGoalAdd, onMealAdd, waterIntake, totalProtein, totalCarbs, totalFat, consumedCalories }) => {
   const [messages, setMessages] = useState([
     { from: 'bot', text: `Hi${user?.name ? ', ' + user.name.split(' ')[0] : ''}! I am your Fit2Go AI assistant. How can I help you with your fitness today?` }
   ]);
@@ -232,15 +232,47 @@ const Chatbot = ({ open, onClose, user, workouts, goals, meals, onGoalAdd, onMea
       setInput('');
       return;
     }
-    if (pendingMeal && input.toLowerCase().startsWith('yes')) {
-      if (onMealAdd) {
-        await onMealAdd(pendingMeal);
-        setMessages(msgs => [...msgs, { from: 'bot', text: `Awesome! I've added "${pendingMeal.title}" to your meal plan.` }]);
+    if (pendingMeal && Array.isArray(pendingMeal) && input.toLowerCase() === 'yes') {
+  try {
+    for (const meal of pendingMeal) {
+      // POST to backend
+      const response = await fetch('/api/meals', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          tab: meal.tab,
+          name: meal.name,
+          description: meal.description,
+          kcal: meal.kcal,
+          protein: meal.protein,
+          carbs: meal.carbs,
+          fat: meal.fat
+        })
+      });
+
+      if (!response.ok) {
+        console.error('Failed to add meal:', await response.text());
+        continue;
       }
-      setPendingMeal(null);
-      setInput('');
-      return;
+
+      const savedMeal = await response.json();
+      // Add saved meal to local state so it appears in meal list
+      setMeals(prev => [...prev, savedMeal]);
     }
+
+    setMessages(msgs => [...msgs, { from: 'bot', text: "Awesome! I've added the meal plan to your day." }]);
+    setPendingMeal(null); // clear pending
+  } catch (err) {
+    console.error('Error adding meals:', err);
+    setMessages(msgs => [...msgs, { from: 'bot', text: "Oops! Something went wrong while adding your meal plan." }]);
+  }
+  setInput('');
+  return;
+}
+
     if (pendingMeal && input.toLowerCase().startsWith('no')) {
       setMessages(msgs => [...msgs, { from: 'bot', text: 'No worries! Ask me for another meal anytime.' }]);
       setPendingMeal(null);
@@ -294,35 +326,151 @@ const Chatbot = ({ open, onClose, user, workouts, goals, meals, onGoalAdd, onMea
       return;
     }
     // --- Meal recommendation (after nutrition details) ---
-    if (isMealRecommendationRequest(input)) {
-      // Try to extract a goal from the user's input
-      const lowerInput = input.toLowerCase();
-      let userGoal = '';
-      if (lowerInput.includes('weight loss')) userGoal = 'weight loss';
-      else if (lowerInput.includes('muscle gain')) userGoal = 'muscle gain';
-      else if (lowerInput.includes('maintain')) userGoal = 'maintain current weight';
-      else if (lowerInput.includes('energy')) userGoal = 'improve energy levels';
-      // If no goal in input, try to use user's goals
-      let goalText = userGoal || goals.map(g=>g.type+':'+g.target+' '+g.unit).join(', ');
-      // If still no goal, use a default
-      if (!goalText) goalText = 'weight loss';
-      const prompt = `Suggest a variety of healthy meals or foods for ${goalText} (or based on the user's request). Do not ask the user for any personal information or dietary details. Respond casually and helpfully, as if chatting with a friend. Always provide a direct and varied suggestion.`;
-      const aiResponse = await fetchGeminiResponse(prompt);
-      // Only offer to add to meal plan if the response contains a real suggestion
-      const lines = aiResponse.split('\n').filter(Boolean);
-      let meal = null;
-      // Heuristic: if the first line is a food/meal name and not a question/request
-      if (lines.length > 0 && !/please specify|provide|can't|cannot|need more info|what is your goal|what are your goals|dietary restriction|preference/i.test(aiResponse)) {
-        meal = {
-          title: lines[0],
-          description: lines.slice(1).join(' ')
-        };
-      }
-      setMessages(msgs => [...msgs, { from: 'bot', text: aiResponse + (meal ? '\n\nWould you like to add this to your meal plan? (yes/no)' : '') }]);
-      if (meal) setPendingMeal(meal);
-      setInput('');
-      return;
+if (isMealRecommendationRequest(input)) {
+  const lowerInput = input.toLowerCase();
+
+  // Try to extract goal from input text
+  let userGoal = '';
+  if (lowerInput.includes('weight loss')) userGoal = 'weight loss';
+  else if (lowerInput.includes('muscle gain')) userGoal = 'muscle gain';
+  else if (lowerInput.includes('maintain')) userGoal = 'maintain current weight';
+  else if (lowerInput.includes('energy')) userGoal = 'improve energy levels';
+
+  // Fallback to user's goals if no direct goal found
+  let goalText = userGoal || goals.map(g => `${g.type}: ${g.target} ${g.unit}`).join(', ');
+  if (!goalText) goalText = 'weight loss'; // final default
+  const prompt = `Suggest a complete daily meal plan for ${goalText}, including Breakfast, Lunch, Dinner, and Snacks.
+For each meal, provide:
+- Meal type (Breakfast, Lunch, Dinner, Snacks)
+- Name of the dish
+- Short description
+- Protein (P: xx g)
+- Carbs (C: xx g)
+- Fat (F: xx g)
+- Calories (xxx kcal)
+
+Format exactly like this:
+Breakfast
+Name
+Description
+P: xx g
+C: xx g
+F: xx g
+xxx kcal
+
+Lunch
+Name
+Description
+P: xx g
+C: xx g
+F: xx g
+xxx kcal
+
+Dinner
+Name
+Description
+P: xx g
+C: xx g
+F: xx g
+xxx kcal
+
+Snacks
+Name
+Description
+P: xx g
+C: xx g
+F: xx g
+xxx kcal
+
+Do not add extra text or explanations.`
+
+
+
+  const aiResponse = await fetchGeminiResponse(prompt);
+
+const lines = aiResponse.split('\n').filter(Boolean);
+let mealsToAdd = [];
+
+let i = 0;
+while (i < lines.length) {
+  let tab = lines[i].trim();
+
+  if (tab === 'Breakfast' || tab === 'Lunch' || tab === 'Dinner') {
+    const name = lines[i+1]?.trim() || '';
+    const description = lines[i+2]?.trim() || '';
+    const protein = parseInt((lines[i+3]?.match(/\d+/) || [0])[0]);
+    const carbs = parseInt((lines[i+4]?.match(/\d+/) || [0])[0]);
+    const fat = parseInt((lines[i+5]?.match(/\d+/) || [0])[0]);
+    const kcal = parseInt((lines[i+6]?.match(/\d+/) || [0])[0]);
+    
+    mealsToAdd.push({
+      _id: Date.now().toString() + Math.random().toString(36).substr(2,5),
+      tab,
+      name,
+      description,
+      protein,
+      carbs,
+      fat,
+      kcal,
+      checked: false,
+      date: new Date().toISOString().slice(0,10)
+    });
+    
+    i += 7;
+  }
+  else if (tab === 'Snacks') {
+    i++;
+    while (i < lines.length && lines[i]) {
+      const name = lines[i]?.trim() || '';
+      const description = lines[i+1]?.trim() || '';
+      const protein = parseInt((lines[i+2]?.match(/\d+/) || [0])[0]);
+      const carbs = parseInt((lines[i+3]?.match(/\d+/) || [0])[0]);
+      const fat = parseInt((lines[i+4]?.match(/\d+/) || [0])[0]);
+      const kcal = parseInt((lines[i+5]?.match(/\d+/) || [0])[0]);
+
+      mealsToAdd.push({
+        _id: Date.now().toString() + Math.random().toString(36).substr(2,5),
+        tab: 'Snacks',
+        name,
+        description,
+        protein,
+        carbs,
+        fat,
+        kcal,
+        checked: false,
+        date: new Date().toISOString().slice(0,10)
+      });
+
+      i += 6;
     }
+  }
+  else {
+    i++;
+  }
+}
+
+
+if (mealsToAdd.length > 0) {
+  setPendingMeal(mealsToAdd); // now pendingMeal is an array
+  setMessages(msgs => [...msgs, { from: 'bot', text: aiResponse + '\n\nWould you like to add this full meal plan to your day? (yes/no)' }]);
+}
+
+
+  setMessages(msgs => [
+    ...msgs,
+    { from: 'bot', text: aiResponse + (mealsToAdd ? '\n\nWould you like to add this to your meal plan? (yes/no)' : '') }
+  ]);
+
+  if (mealsToAdd)
+    {
+       setPendingMeal(mealsToAdd);
+       console.log("Set pending meal:", mealsToAdd);
+    }
+
+  setInput('');
+  return;
+}
+
     if (isWorkoutRecommendationRequest(input)) {
       const prompt = `Suggest a personalized workout for this user: ${user?.name || ''}, goals: ${goals.map(g=>g.type+':'+g.target+' '+g.unit).join(', ')}, recent workouts: ${workouts.slice(0,3).map(w=>w.type+ ' on '+w.date).join(', ')}. Reply with a short workout plan (type, duration, and a motivating title).`;
       const aiResponse = await fetchGeminiResponse(prompt);
