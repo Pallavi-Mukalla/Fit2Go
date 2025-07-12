@@ -10,6 +10,7 @@ const mealSchema = new mongoose.Schema({
   protein: Number,
   carbs: Number,
   fat: Number,
+  checked: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });
 

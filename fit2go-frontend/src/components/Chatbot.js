@@ -74,6 +74,7 @@ const Chatbot = ({ open, onClose, user, workouts, goals, meals, onGoalAdd, onMea
   const [pendingMeal, setPendingMeal] = useState(null);
   const messagesEndRef = useRef(null);
   const [isListening, setIsListening] = useState(false);
+  const [isTTSEnabled, setIsTTSEnabled] = useState(false); // NEW: track TTS on/off
   const recognitionRef = useRef(null);
 
   useEffect(() => {
@@ -92,6 +93,14 @@ const Chatbot = ({ open, onClose, user, workouts, goals, meals, onGoalAdd, onMea
     }
   };
 
+  // Speak only if TTS is enabled
+  useEffect(() => {
+    if (isTTSEnabled && messages.length > 0 && messages[messages.length - 1].from === 'bot') {
+      speak(messages[messages.length - 1].text);
+    }
+    // eslint-disable-next-line
+  }, [messages]);
+
   // --- Speech-to-Text (STT) ---
   const startListening = () => {
     if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
@@ -104,8 +113,17 @@ const Chatbot = ({ open, onClose, user, workouts, goals, meals, onGoalAdd, onMea
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
     recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      setInput(transcript);
+      const transcript = event.results[0][0].transcript.toLowerCase();
+      // NEW: handle voice commands
+      if (transcript.includes('enable voice')) {
+        setIsTTSEnabled(true);
+        setMessages(msgs => [...msgs, { from: 'bot', text: 'Voice response has been enabled.' }]);
+      } else if (transcript.includes('disable voice')) {
+        setIsTTSEnabled(false);
+        setMessages(msgs => [...msgs, { from: 'bot', text: 'Voice response has been disabled.' }]);
+      } else {
+        setInput(transcript);
+      }
     };
     recognition.onend = () => setIsListening(false);
     recognition.onerror = () => setIsListening(false);
@@ -113,20 +131,13 @@ const Chatbot = ({ open, onClose, user, workouts, goals, meals, onGoalAdd, onMea
     setIsListening(true);
     recognition.start();
   };
+
   const stopListening = () => {
     if (recognitionRef.current) {
       recognitionRef.current.stop();
       setIsListening(false);
     }
   };
-
-  // --- Speak bot responses ---
-  useEffect(() => {
-    if (messages.length > 0 && messages[messages.length - 1].from === 'bot') {
-      speak(messages[messages.length - 1].text);
-    }
-    // eslint-disable-next-line
-  }, [messages]);
 
   const fetchGeminiResponse = async (prompt) => {
     setLoading(true);
@@ -338,151 +349,177 @@ const Chatbot = ({ open, onClose, user, workouts, goals, meals, onGoalAdd, onMea
   if (!open) return null;
 
   return (
-    <div
-      className="fit2go-chatbot-modal"
-      style={{
-        position: 'fixed',
-        bottom: 30,
-        right: 30,
-        width: 370,
-        height: 500,
-        background: 'rgba(255,255,255,0.85)',
-        borderRadius: 20,
-        boxShadow: '0 8px 32px rgba(59,130,246,0.18)',
-        zIndex: 9999,
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        backdropFilter: 'blur(8px)',
-        border: '1.5px solid #e0e7ff',
-        animation: 'chat-modal-in 0.4s',
-      }}
-    >
-      {/* Header */}
-      <div style={{
-        background: 'linear-gradient(90deg,#3B82F6,#8B5CF6)',
-        color: 'white',
-        padding: 16,
-        fontWeight: 600,
-        display: 'flex',
-        alignItems: 'center',
-        borderBottom: '1px solid #e0e7ff',
-        minHeight: 60
-      }}>
-        <img src={botAvatar} alt="Bot" style={{ width: 38, height: 38, borderRadius: '50%', marginRight: 14, border: '2px solid #fff', boxShadow: '0 2px 8px rgba(59,130,246,0.10)' }} />
-        <span style={{ fontSize: 18, letterSpacing: 0.5 }}>Fit2Go Chatbot</span>
-        <span
-          style={{ marginLeft: 'auto', fontSize: 26, cursor: 'pointer', opacity: 0.8, transition: 'opacity 0.2s' }}
-          onClick={onClose}
-          title="Close"
-        >×</span>
-      </div>
-      {/* Messages */}
-      <div style={{ flex: 1, padding: 18, overflowY: 'auto', background: 'linear-gradient(135deg,#f0f7ff 60%,#e0e7ff 100%)' }}>
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            style={{
-              marginBottom: 14,
-              display: 'flex',
-              flexDirection: msg.from === 'user' ? 'row-reverse' : 'row',
-              alignItems: 'flex-end',
-              gap: 8
-            }}
-          >
-            {msg.from === 'bot' && (
-              <img src={botAvatar} alt="Bot" style={{ width: 28, height: 28, borderRadius: '50%', border: '1.5px solid #e0e7ff', background: '#fff' }} />
-            )}
-            <span
-              style={{
-                display: 'inline-block',
-                background: msg.from === 'user' ? 'linear-gradient(90deg,#3B82F6,#8B5CF6)' : 'rgba(255,255,255,0.95)',
-                color: msg.from === 'user' ? 'white' : '#333',
-                borderRadius: 16,
-                padding: '10px 18px',
-                maxWidth: 240,
-                fontSize: 15,
-                boxShadow: msg.from === 'user' ? '0 2px 8px #c7d2fe' : '0 2px 8px #e0e7ff',
-                border: msg.from === 'user' ? 'none' : '1.5px solid #e0e7ff',
-                wordBreak: 'break-word',
-                whiteSpace: 'pre-line',
-                marginLeft: msg.from === 'user' ? 0 : 4,
-                marginRight: msg.from === 'user' ? 4 : 0
-              }}
-            >{msg.text}</span>
-          </div>
-        ))}
-        {loading && (
-          <div style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <img src={botAvatar} alt="Bot" style={{ width: 28, height: 28, borderRadius: '50%', border: '1.5px solid #e0e7ff', background: '#fff' }} />
-            <span style={{ background: 'rgba(255,255,255,0.95)', color: '#333', borderRadius: 16, padding: '10px 18px', fontSize: 15, border: '1.5px solid #e0e7ff', boxShadow: '0 2px 8px #e0e7ff' }}>Thinking...</span>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-      {/* Input */}
-      <div style={{ display: 'flex', borderTop: '1.5px solid #e0e7ff', background: 'rgba(255,255,255,0.95)', padding: 10, alignItems: 'center' }}>
-        <input
-          style={{
-            flex: 1,
-            border: 'none',
-            padding: '12px 14px',
-            fontSize: 16,
-            borderRadius: 12,
-            outline: 'none',
-            background: 'rgba(243,244,246,0.7)',
-            marginRight: 10,
-            boxShadow: '0 1px 4px #e0e7ff',
-            color: '#222'
-          }}
-          placeholder="Type your message..."
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
-          disabled={loading}
-        />
-        <button
-          style={{
-            background: 'linear-gradient(90deg,#3B82F6,#8B5CF6)',
-            color: 'white',
-            border: 'none',
-            borderRadius: 12,
-            fontWeight: 600,
-            fontSize: 16,
-            padding: '10px 22px',
-            cursor: loading || !input.trim() ? 'not-allowed' : 'pointer',
-            opacity: loading || !input.trim() ? 0.7 : 1,
-            boxShadow: '0 2px 8px #c7d2fe',
-            transition: 'opacity 0.2s'
-          }}
-          onClick={handleSend}
-          disabled={loading || !input.trim()}
-        >Send</button>
-        <button
-          style={{
-            marginLeft: 8,
-            background: isListening ? '#3B82F6' : '#e0e7ff',
-            color: isListening ? 'white' : '#333',
-            border: 'none',
-            borderRadius: '50%',
-            width: 40,
-            height: 40,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 20,
-            boxShadow: isListening ? '0 2px 8px #3B82F6' : '0 2px 8px #e0e7ff',
-            cursor: 'pointer',
-            transition: 'background 0.2s, color 0.2s'
-          }}
-          onClick={isListening ? stopListening : startListening}
-          title={isListening ? 'Stop Listening' : 'Speak'}
-        >
-          {isListening ? '🎤' : '🎙️'}
-        </button>
-      </div>
+  <div
+    className="fit2go-chatbot-modal"
+    style={{
+      position: 'fixed',
+      bottom: 30,
+      right: 30,
+      width: 370,
+      height: 500,
+      background: 'rgba(255,255,255,0.85)',
+      borderRadius: 20,
+      boxShadow: '0 8px 32px rgba(59,130,246,0.18)',
+      zIndex: 9999,
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden',
+      backdropFilter: 'blur(8px)',
+      border: '1.5px solid #e0e7ff',
+      animation: 'chat-modal-in 0.4s',
+    }}
+  >
+    {/* Header */}
+    <div style={{
+      background: 'linear-gradient(90deg,#3B82F6,#8B5CF6)',
+      color: 'white',
+      padding: 16,
+      fontWeight: 600,
+      display: 'flex',
+      alignItems: 'center',
+      borderBottom: '1px solid #e0e7ff',
+      minHeight: 60
+    }}>
+      <img src={botAvatar} alt="Bot" style={{ width: 38, height: 38, borderRadius: '50%', marginRight: 14, border: '2px solid #fff', boxShadow: '0 2px 8px rgba(59,130,246,0.10)' }} />
+      <span style={{ fontSize: 18, letterSpacing: 0.5 }}>Fit2Go Chatbot</span>
+      <span
+        style={{ marginLeft: 'auto', fontSize: 26, cursor: 'pointer', opacity: 0.8, transition: 'opacity 0.2s' }}
+        onClick={onClose}
+        title="Close"
+      >×</span>
     </div>
-  );
-};
 
-export default Chatbot; 
+    {/* Messages */}
+    <div style={{ flex: 1, padding: 18, overflowY: 'auto', background: 'linear-gradient(135deg,#f0f7ff 60%,#e0e7ff 100%)' }}>
+      {messages.map((msg, i) => (
+        <div
+          key={i}
+          style={{
+            marginBottom: 14,
+            display: 'flex',
+            flexDirection: msg.from === 'user' ? 'row-reverse' : 'row',
+            alignItems: 'flex-end',
+            gap: 8
+          }}
+        >
+          {msg.from === 'bot' && (
+            <img src={botAvatar} alt="Bot" style={{ width: 28, height: 28, borderRadius: '50%', border: '1.5px solid #e0e7ff', background: '#fff' }} />
+          )}
+          <span
+            style={{
+              display: 'inline-block',
+              background: msg.from === 'user' ? 'linear-gradient(90deg,#3B82F6,#8B5CF6)' : 'rgba(255,255,255,0.95)',
+              color: msg.from === 'user' ? 'white' : '#333',
+              borderRadius: 16,
+              padding: '10px 18px',
+              maxWidth: 240,
+              fontSize: 15,
+              boxShadow: msg.from === 'user' ? '0 2px 8px #c7d2fe' : '0 2px 8px #e0e7ff',
+              border: msg.from === 'user' ? 'none' : '1.5px solid #e0e7ff',
+              wordBreak: 'break-word',
+              whiteSpace: 'pre-line',
+              marginLeft: msg.from === 'user' ? 0 : 4,
+              marginRight: msg.from === 'user' ? 4 : 0
+            }}
+          >{msg.text}</span>
+        </div>
+      ))}
+      {loading && (
+        <div style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <img src={botAvatar} alt="Bot" style={{ width: 28, height: 28, borderRadius: '50%', border: '1.5px solid #e0e7ff', background: '#fff' }} />
+          <span style={{ background: 'rgba(255,255,255,0.95)', color: '#333', borderRadius: 16, padding: '10px 18px', fontSize: 15, border: '1.5px solid #e0e7ff', boxShadow: '0 2px 8px #e0e7ff' }}>Thinking...</span>
+        </div>
+      )}
+      <div ref={messagesEndRef} />
+    </div>
+
+    {/* Input */}
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      borderTop: '1.5px solid #e0e7ff',
+      background: 'rgba(255,255,255,0.95)',
+      padding: '8px 8px',
+      gap: 6
+    }}>
+      <input
+        style={{
+          flex: 1,
+          border: 'none',
+          padding: '10px 12px',
+          fontSize: 15,
+          borderRadius: 10,
+          outline: 'none',
+          background: 'rgba(243,244,246,0.7)',
+          boxShadow: '0 1px 4px #e0e7ff',
+          color: '#222',
+          minWidth: 0
+        }}
+        placeholder="Type your message..."
+        value={input}
+        onChange={e => setInput(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
+        disabled={loading}
+      />
+      <button
+        style={{
+          background: 'linear-gradient(90deg,#3B82F6,#8B5CF6)',
+          color: 'white',
+          border: 'none',
+          borderRadius: 10,
+          fontWeight: 600,
+          fontSize: 14,
+          padding: '8px 14px',
+          cursor: loading || !input.trim() ? 'not-allowed' : 'pointer',
+          opacity: loading || !input.trim() ? 0.7 : 1,
+          boxShadow: '0 2px 6px #c7d2fe',
+        }}
+        onClick={handleSend}
+        disabled={loading || !input.trim()}
+      >Send</button>
+      <button
+        style={{
+          background: isListening ? '#3B82F6' : '#e0e7ff',
+          color: isListening ? 'white' : '#333',
+          border: 'none',
+          borderRadius: '50%',
+          width: 34,
+          height: 34,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 16,
+          boxShadow: isListening ? '0 2px 6px #3B82F6' : '0 2px 6px #e0e7ff',
+          cursor: 'pointer',
+        }}
+        onClick={isListening ? stopListening : startListening}
+        title={isListening ? 'Stop Listening' : 'Speak'}
+      >
+        {isListening ? '🎤' : '🎙️'}
+      </button>
+      <button
+        style={{
+          background: isTTSEnabled ? '#3B82F6' : '#e0e7ff',
+          color: isTTSEnabled ? 'white' : '#333',
+          border: 'none',
+          borderRadius: '50%',
+          width: 34,
+          height: 34,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 16,
+          boxShadow: isTTSEnabled ? '0 2px 6px #3B82F6' : '0 2px 6px #e0e7ff',
+          cursor: 'pointer',
+        }}
+        onClick={() => setIsTTSEnabled(prev => !prev)}
+        title={isTTSEnabled ? 'Disable Voice Response' : 'Enable Voice Response'}
+      >
+        🔈
+      </button>
+    </div>
+  </div>
+);
+}
+
+export default Chatbot;

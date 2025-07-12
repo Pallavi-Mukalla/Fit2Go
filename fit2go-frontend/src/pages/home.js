@@ -64,15 +64,17 @@ const Hero = () => {
           Track workouts, plan meals, and achieve your fitness goals with AI-powered recommendations tailored just for you.
         </p>
         <div className="d-flex gap-3">
-          <button
-            className="btn px-4 py-2"
-            style={{
-              backgroundColor: '#00C4B4',
-              color: 'white',
-            }}
-          >
-            Get Started Free
-          </button>
+          <Link to="/signup">
+            <button
+              className="btn px-4 py-2"
+              style={{
+                backgroundColor: '#00C4B4',
+                color: 'white',
+              }}
+            >
+              Get Started Free
+            </button>
+          </Link>
           <button className="btn btn-link text-muted d-flex align-items-center">
             <span className="bg-success rounded-circle me-2" style={{ width: '16px', height: '16px' }}></span>
             Watch Demo

@@ -1,9 +1,10 @@
 const mongoose = require('mongoose');
 
-const WaterSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  amount: { type: Number, required: true }, // e.g., in liters or ml
-  date: { type: Date, default: Date.now }
+const waterSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  amount: { type: Number, required: true },
+  date: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('Water', WaterSchema);
+module.exports = mongoose.model('Water', waterSchema);
