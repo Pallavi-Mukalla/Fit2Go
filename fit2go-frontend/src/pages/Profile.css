@@ -325,3 +325,36 @@
     margin: 1rem;
   }
 } 
+.profile-avatar {
+  border-radius: 9999px !important;  /* force it to be a circle */
+  overflow: hidden;
+}
+
+.profile-avatar {
+  width: 4rem;                /* same as w-16 */
+  height: 4rem;               /* same as h-16 */
+  background-color: #2563eb;
+  color: white;
+  border-radius: 9999px;      /* fully circular */
+  display: flex;              /* center content horizontally and vertically */
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-text {
+  font-size: 1.5rem;          /* same as text-2xl */
+  font-weight: 600;
+  line-height: 1;             /* ensure perfect vertical centering */
+}
+
+.user-name-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* aligns content to start horizontally */
+}
+.user-name-block h3 {
+  margin: 0; /* remove extra margin if you want tighter spacing */
+}
+.user-name-block p {
+  margin: 0; /* remove extra margin if needed */
+}

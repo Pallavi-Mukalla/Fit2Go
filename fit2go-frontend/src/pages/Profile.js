@@ -180,13 +180,14 @@ function Profile() {
         {user ? (
           <div className="space-y-4">
             <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl">
-                {initials}
+              <div className="profile-avatar">
+                <span className="avatar-text">{initials}</span>
               </div>
-              <div>
-                <h3 className="text-lg font-medium text-gray-800">Name</h3>
-                <p className="text-gray-600">{user.name}</p>
-              </div>
+                <div className="user-name-block">
+                  <h3 className="text-lg font-medium text-gray-800">Name</h3>
+                  <p className="text-gray-600">{user.name}</p>
+                </div>
+
             </div>
             <div>
               <h3 className="text-lg font-medium text-gray-800">Email</h3>

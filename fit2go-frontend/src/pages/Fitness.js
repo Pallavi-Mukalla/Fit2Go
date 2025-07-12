@@ -354,7 +354,6 @@ const Header = ({ user }) => {
         <ul>
           <li><button onClick={() => navigate('/dashboard')}>Dashboard</button></li>
           <li><button onClick={() => navigate('/nutrition')}>Nutrition</button></li>
-          <li><button onClick={() => navigate('/fitness')}>Workouts</button></li>
           {/* <li><button onClick={() => navigate('/Chatbot')}>chatbot</button></li> */}
         </ul>
       </nav>
