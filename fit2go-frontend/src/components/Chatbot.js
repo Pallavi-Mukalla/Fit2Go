@@ -193,7 +193,7 @@ const Chatbot = ({ open, onClose, user, userId, type, workouts, goals, meals, se
   const fetchGeminiResponse = async (prompt) => {
     setLoading(true);
     try {
-      const res = await fetch('${process.env.REACT_APP_API_URL}/api/genai', {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/genai`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
         body: JSON.stringify({ prompt, user, workouts, goals })
@@ -283,7 +283,7 @@ const Chatbot = ({ open, onClose, user, userId, type, workouts, goals, meals, se
     if (pendingMeal && Array.isArray(pendingMeal) && input.toLowerCase() === 'yes') {
       try {
         for (const meal of pendingMeal) {
-          const response = await fetch('${process.env.REACT_APP_API_URL}/api/meals', {
+          const response = await fetch(`${process.env.REACT_APP_API_URL}/api/meals`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -754,7 +754,7 @@ Do not add extra text.`;
         });
       } else {
         console.log('Creating new conversation');
-        response = await fetch('${process.env.REACT_APP_API_URL}/api/conversations', {
+        response = await fetch(`${process.env.REACT_APP_API_URL}/api/conversations`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(conversationData)

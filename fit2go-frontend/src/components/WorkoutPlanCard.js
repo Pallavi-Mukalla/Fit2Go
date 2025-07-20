@@ -14,7 +14,7 @@ async function checkPoseWithGroqAPI(file, exercise) {
   formData.append('file', file);
   formData.append('exercise', exercise);
   // Replace with your actual Groq Cloud API endpoint
-  const apiUrl = '${process.env.REACT_APP_API_URL}/api/groq-pose';
+  const apiUrl = `${process.env.REACT_APP_API_URL}/api/groq-pose`;
   const response = await fetch(apiUrl, {
     method: 'POST',
     body: formData,
