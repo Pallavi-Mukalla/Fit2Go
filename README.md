@@ -6,6 +6,12 @@ A Fitness and Nutrition tracking web application.
 - Backend: Node.js + Express
 - Database: MongoDB
 ---
+## 🔗 Live Website  
+[🌐 Visit FIT2GO](https://fit2go-frontend.onrender.com)
+
+## 📽 Demo Video  
+[▶️ Watch Demo](https://drive.google.com/file/d/1bs00E24XnjPuxu0GjcVtUU3dX9LTDOnb/view?usp=drive_link)
+
 ## 🛠 Setup
 
 Clone the repository:
