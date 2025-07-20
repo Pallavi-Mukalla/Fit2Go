@@ -8,6 +8,7 @@ const axios = require('axios');
 const Goal = require('./models/Goal');
 dotenv.config();
 
+const app = express();
 
 app.use(cors({
   origin: process.env.FRONTEND_URL, // e.g., https://fit2go-frontend.onrender.com
