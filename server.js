@@ -16,7 +16,7 @@ mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopol
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.log(err));
 
-const User = require('./models/User');
+const User = require('./models/user');
 const { Workout, WorkoutPlan } = require('./models/Workout');
 
 app.post('/signup', async (req, res) => {
@@ -68,7 +68,7 @@ const auth = require('./middleware/auth');
 
 app.get('/profile', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.userId).select('name email'); // select only fields you want to send
+    const user = await User.findById(req.userId).select('_id name email');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -76,7 +76,7 @@ app.get('/profile', auth, async (req, res) => {
     // You can also add initials on the server side
     const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
 
-    res.json({ name: user.name, email: user.email, initials });
+    res.json({ _id: user._id, name: user.name, email: user.email, initials });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error while fetching profile', error: err.message });

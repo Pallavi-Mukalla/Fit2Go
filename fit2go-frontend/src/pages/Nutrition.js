@@ -942,12 +942,14 @@ function Nutrition() {
         open={isChatOpen}
         onClose={() => setIsChatOpen(false)}
         user={user}
+        userId={user?._id}
+        type="nutrition"
         meals={meals}
         workouts={workouts}
         goals={goals}
         onGoalAdd={handleAddGoalFromChatbot}
         setMeals={setMeals}  
-         onMealAdd={handleMealAdd}
+        onMealAdd={handleMealAdd}
         waterIntake={dailyWater}
         totalProtein={totalProtein}
         totalCarbs={totalCarbs}
