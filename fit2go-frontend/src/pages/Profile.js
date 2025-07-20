@@ -32,7 +32,7 @@ function Profile() {
 
     const fetchProfile = async () => {
       try {
-        const res = await fetch("${process.env.REACT_APP_API_URL}/profile", {
+        const res = await fetch(`${process.env.REACT_APP_API_URL}/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
@@ -81,7 +81,7 @@ function Profile() {
 
     setIsLoading(true);
     try {
-      const res = await fetch("${process.env.REACT_APP_API_URL}/api/reset-password", {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/reset-password`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

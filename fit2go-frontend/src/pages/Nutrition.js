@@ -54,7 +54,7 @@ function Nutrition() {
     const token = localStorage.getItem('token');
     if (!token) return;
     try {
-      const res = await fetch('${process.env.REACT_APP_API_URL}/api/meals', {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/meals`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -76,7 +76,7 @@ function Nutrition() {
     const token = localStorage.getItem('token');
     if (!token) return;
     try {
-      const res = await fetch('${process.env.REACT_APP_API_URL}/api/water', {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/water`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -112,7 +112,7 @@ function Nutrition() {
       const token = localStorage.getItem('token');
       if (!token) return;
       try {
-        const res = await fetch('${process.env.REACT_APP_API_URL}/profile', {
+        const res = await fetch(`${process.env.REACT_APP_API_URL}/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
@@ -134,7 +134,7 @@ function Nutrition() {
       const token = localStorage.getItem('token');
       if (!token) return;
       try {
-        const res = await fetch('${process.env.REACT_APP_API_URL}/api/workouts', {
+        const res = await fetch(`${process.env.REACT_APP_API_URL}/api/workouts`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
@@ -151,7 +151,7 @@ function Nutrition() {
       const token = localStorage.getItem('token');
       if (!token) return;
       try {
-        const res = await fetch('${process.env.REACT_APP_API_URL}/api/goals', {
+        const res = await fetch(`${process.env.REACT_APP_API_URL}/api/goals`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
@@ -210,7 +210,7 @@ function Nutrition() {
       return;
     }
     try {
-      const res = await fetch('${process.env.REACT_APP_API_URL}/api/meals/copy-yesterday', {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/meals/copy-yesterday`, {
         method: 'POST',
         headers: { 
           Authorization: `Bearer ${token}`,
@@ -352,7 +352,7 @@ function Nutrition() {
         carbs: parseInt(newMeal.carbs, 10) || 0,
         fat: parseInt(newMeal.fat, 10) || 0
       };
-      const res = await fetch('${process.env.REACT_APP_API_URL}/api/meals', {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/meals`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json', 
@@ -388,7 +388,7 @@ function Nutrition() {
   const handleAddWater = async () => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('${process.env.REACT_APP_API_URL}/api/water', {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/water`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -427,7 +427,7 @@ function Nutrition() {
     setRecommendedRecipes([]);
     setIsLoadingRecipes(true);
     try {
-      const res = await fetch('${process.env.REACT_APP_API_URL}/api/recipes', {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/recipes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filter }),
@@ -464,7 +464,7 @@ function Nutrition() {
       description: goal.title,
     };
     try {
-      const res = await fetch('${process.env.REACT_APP_API_URL}/api/goals', {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/goals`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
