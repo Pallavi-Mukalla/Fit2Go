@@ -11,7 +11,8 @@ dotenv.config();
 const app = express();
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL, // e.g., https://fit2go-frontend.onrender.com
+  origin: process.env.FRONTEND_URL, 
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true,
 }))
 app.use(express.json());
