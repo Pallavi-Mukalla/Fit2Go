@@ -8,8 +8,12 @@ const axios = require('axios');
 const Goal = require('./models/Goal');
 dotenv.config();
 
-const app = express();
-app.use(cors());  // Allow all origins
+const cors = require('cors');
+
+app.use(cors({
+  origin: process.env.FRONTEND_URL, // e.g., https://fit2go-frontend.onrender.com
+  credentials: true,
+}))
 app.use(express.json());
 
 mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
