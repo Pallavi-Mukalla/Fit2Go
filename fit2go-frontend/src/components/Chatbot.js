@@ -123,7 +123,7 @@ const Chatbot = ({ open, onClose, user, userId, type, workouts, goals, meals, se
     }
     try {
       console.log('Fetching previous chats for:', { userId, type });
-      const res = await fetch(`http://localhost:5000/api/conversations?userId=${userId}&type=${type}`);
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/conversations?userId=${userId}&type=${type}`);
       if (res.ok) {
         const data = await res.json();
         console.log('Previous chats loaded:', data.length);
@@ -193,7 +193,7 @@ const Chatbot = ({ open, onClose, user, userId, type, workouts, goals, meals, se
   const fetchGeminiResponse = async (prompt) => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/genai', {
+      const res = await fetch('${process.env.REACT_APP_API_URL}/api/genai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
         body: JSON.stringify({ prompt, user, workouts, goals })
@@ -283,7 +283,7 @@ const Chatbot = ({ open, onClose, user, userId, type, workouts, goals, meals, se
     if (pendingMeal && Array.isArray(pendingMeal) && input.toLowerCase() === 'yes') {
       try {
         for (const meal of pendingMeal) {
-          const response = await fetch('http://localhost:5000/api/meals', {
+          const response = await fetch('${process.env.REACT_APP_API_URL}/api/meals', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -651,7 +651,7 @@ Do not add extra text.`;
 
     try {
       console.log('Deleting conversation:', conversationToDelete._id);
-      const response = await fetch(`http://localhost:5000/api/conversations/${conversationToDelete._id}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/conversations/${conversationToDelete._id}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -747,14 +747,14 @@ Do not add extra text.`;
       let response;
       if (currentConversationId) {
         console.log('Updating existing conversation:', currentConversationId);
-        response = await fetch(`http://localhost:5000/api/conversations/${currentConversationId}`, {
+        response = await fetch(`${process.env.REACT_APP_API_URL}/api/conversations/${currentConversationId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(conversationData)
         });
       } else {
         console.log('Creating new conversation');
-        response = await fetch('http://localhost:5000/api/conversations', {
+        response = await fetch('${process.env.REACT_APP_API_URL}/api/conversations', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(conversationData)

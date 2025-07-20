@@ -628,7 +628,7 @@ const WorkoutLogs = ({ workouts, setWorkouts, fetchGoals }) => {
     };
     try {
       if (editingWorkout) {
-        const res = await fetch(`http://localhost:5000/api/workouts/${editingWorkout._id || editingWorkout.id}`, {
+        const res = await fetch(`${process.env.REACT_APP_API_URL}/api/workouts/${editingWorkout._id || editingWorkout.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -646,7 +646,7 @@ const WorkoutLogs = ({ workouts, setWorkouts, fetchGoals }) => {
           showToast('Error updating workout', 'error');
         }
       } else {
-        const res = await fetch('http://localhost:5000/api/workouts', {
+        const res = await fetch('${process.env.REACT_APP_API_URL}/api/workouts', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -687,7 +687,7 @@ const WorkoutLogs = ({ workouts, setWorkouts, fetchGoals }) => {
   const handleDeleteWorkout = async (id) => {
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/workouts/${id}`, {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/workouts/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -855,7 +855,7 @@ const Goals = ({ goals, setGoals }) => {
       description: newGoal.description
     };
     try {
-      const res = await fetch('http://localhost:5000/api/goals', {
+      const res = await fetch('${process.env.REACT_APP_API_URL}/api/goals', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -885,7 +885,7 @@ const Goals = ({ goals, setGoals }) => {
   const handleDeleteGoal = async (id) => {
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/goals/${id}`, {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/goals/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -922,7 +922,7 @@ const Goals = ({ goals, setGoals }) => {
       description: newGoal.description
     };
     try {
-      const res = await fetch(`http://localhost:5000/api/goals/${editingGoal._id || editingGoal.id}`, {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/goals/${editingGoal._id || editingGoal.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -954,7 +954,7 @@ const Goals = ({ goals, setGoals }) => {
       return;
     }
     try {
-      const res = await fetch(`http://localhost:5000/api/goals/${goal._id || goal.id}`, {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/goals/${goal._id || goal.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -1083,7 +1083,7 @@ const Fitness = () => {
   async function fetchGoals() {
     const token = localStorage.getItem('token');
     if (!token) return;
-    const res = await fetch('http://localhost:5000/api/goals', {
+    const res = await fetch('${process.env.REACT_APP_API_URL}/api/goals', {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (res.ok) {
@@ -1096,7 +1096,7 @@ const Fitness = () => {
     async function fetchProfile() {
       const token = localStorage.getItem('token');
       if (!token) return;
-      const res = await fetch('http://localhost:5000/profile', {
+      const res = await fetch('${process.env.REACT_APP_API_URL}/profile', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -1107,7 +1107,7 @@ const Fitness = () => {
     async function fetchWorkouts() {
       const token = localStorage.getItem('token');
       if (!token) return;
-      const res = await fetch('http://localhost:5000/api/workouts', {
+      const res = await fetch('${process.env.REACT_APP_API_URL}/api/workouts', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -1118,7 +1118,7 @@ const Fitness = () => {
     async function fetchMeals() {
       const token = localStorage.getItem('token');
       if (!token) return;
-      const res = await fetch('http://localhost:5000/api/meals', {
+      const res = await fetch('${process.env.REACT_APP_API_URL}/api/meals', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -1129,7 +1129,7 @@ const Fitness = () => {
     async function fetchWeeklyPlan() {
       const token = localStorage.getItem('token');
       if (!token) return;
-      const res = await fetch('http://localhost:5000/api/workout-plan', {
+      const res = await fetch('${process.env.REACT_APP_API_URL}/api/workout-plan', {
         method : 'GET', 
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -1166,7 +1166,7 @@ const Fitness = () => {
       deadline: new Date(Date.now() + 7*24*60*60*1000).toISOString().slice(0,10), // 1 week from now
       description: goal.title
     };
-    const res = await fetch('http://localhost:5000/api/goals', {
+    const res = await fetch('${process.env.REACT_APP_API_URL}/api/goals', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1192,7 +1192,7 @@ const Fitness = () => {
       duration: plan.duration,
       calories: plan.duration * 7 // estimate
     };
-    const res = await fetch('http://localhost:5000/api/workouts', {
+    const res = await fetch('${process.env.REACT_APP_API_URL}/api/workouts', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1208,7 +1208,7 @@ const Fitness = () => {
         // Find fitness goal and update progress
         const fitnessGoal = goals.find(g => g.type === 'fitness');
         const progress = (fitnessGoal.progress || 0) + 1;
-        await fetch(`http://localhost:5000/api/goals/${fitnessGoal._id || fitnessGoal.id}`, {
+        await fetch(`${process.env.REACT_APP_API_URL}/api/goals/${fitnessGoal._id || fitnessGoal.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
