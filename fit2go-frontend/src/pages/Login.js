@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 const Login = () => {
   const navigate = useNavigate(); // Use useNavigate instead of useHistory
@@ -61,7 +62,7 @@ const Login = () => {
         <button className="form-button" onClick={handleLogin}>Log In</button>
         {error && <p className="error-message">{error}</p>}
         <p className="form-footer">
-          Don't have an account? <a href="/signup">Sign Up</a>
+          Don't have an account? <Link to="/signup">Sign Up</Link>
         </p>
       </div>
     </div>
