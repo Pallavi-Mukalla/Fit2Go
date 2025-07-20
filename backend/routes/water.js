@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
-const Water = require('../models/Water');
+const Water = require('../models/water');
 const authMiddleware = require('../middleware/auth');
 
 // GET water entries for the current day

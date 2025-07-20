@@ -12,7 +12,7 @@ const app = express();
 app.use(cors());  // Allow all origins
 app.use(express.json());
 
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.log(err));
 
@@ -541,6 +541,11 @@ app.get('/api/workout-plan', auth, async (req, res) => {
     console.error('Error fetching/generating workout plan:', err);
     res.status(500).json({ message: 'Server error while fetching/generating workout plan', error: err.message });
   }
+});
+
+// Health check endpoint for Render
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'OK', message: 'Fit2Go Backend is running' });
 });
 
 const PORT = process.env.PORT || 5000;
