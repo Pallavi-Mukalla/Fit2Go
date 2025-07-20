@@ -1264,10 +1264,11 @@ const Fitness = () => {
         open={chatOpen}
         onClose={() => setChatOpen(false)}
         user={user}
+        userId={user?._id}
+        type="workout"
         workouts={workouts}
         goals={goals}
         meals={meals}
-        
         onGoalAdd={handleAddGoalFromChatbot}
       />
       {/* Floating Chatbot Button */}
