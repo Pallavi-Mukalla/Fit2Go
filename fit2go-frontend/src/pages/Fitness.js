@@ -415,12 +415,13 @@ const Header = ({ user }) => {
 // Dashboard Stats Component
 function getStartOfWeek(date, offset = 0) {
   const d = new Date(date);
-  d.setDate(d.getDate() - d.getDay() + 1 + offset * 7); // Monday
+  d.setDate(d.getDate() - d.getDay() + offset * 7); // Sunday
   d.setHours(0, 0, 0, 0);
   return d;
 }
 function isInWeek(dateStr, weekStart) {
-  const d = new Date(dateStr);
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const d = new Date(year, month - 1, day);
   d.setHours(0, 0, 0, 0);
   return d >= weekStart && d < new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
 }
@@ -436,6 +437,9 @@ const DashboardStats = ({ workouts, goals }) => {
   const lastWeekCalories = lastWeekWorkouts.reduce((sum, workout) => sum + (typeof workout.calories === 'number' ? workout.calories : 0), 0);
   const activeGoals = goals.filter(g => !g.achieved);
   const completedGoals = goals.filter(g => g.achieved);
+  console.log("workouts", workouts.map(w => w.date));
+  console.log("thisWeekStart", thisWeekStart);
+  console.log("Filtered this week", workouts.filter(w => isInWeek(w.date, thisWeekStart)));
   return (
     <div className="stats-grid">
       <div className="stat-card">
@@ -494,21 +498,27 @@ const COLORS = ['#3B82F6', '#10B981', '#F59E42', '#8B5CF6', '#F97316', '#EF4444'
 
 function getWeekData(workouts) {
   // Group workouts by day of week (Mon-Sun)
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const now = new Date();
   const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - now.getDay() + 1); // Monday
+  weekStart.setDate(now.getDate() - now.getDay()); // Sunday
   const data = days.map((day, i) => {
     const d = new Date(weekStart);
     d.setDate(weekStart.getDate() + i);
     const dateStr = d.toISOString().slice(0, 10);
-    const dayWorkouts = workouts.filter(w => w.date === dateStr);
+    const dayWorkouts = workouts.filter(w => {
+      // Always compare only the date part
+      const wDate = typeof w.date === 'string' ? w.date.slice(0, 10) : '';
+      return wDate === dateStr;
+    });
     return {
       day,
       workouts: dayWorkouts.length,
       calories: dayWorkouts.reduce((sum, w) => sum + (w.calories || 0), 0)
     };
   });
+  console.log("getWeekData input", workouts.map(w => w.date));
+  console.log("weekData", data);
   return data;
 }
 
@@ -572,7 +582,7 @@ const ProgressTracking = ({ goals, workouts }) => {
 
 // Workout Logs Component
 const WorkoutLogs = ({ workouts, setWorkouts, fetchGoals }) => {
-  const [newWorkout, setNewWorkout] = useState({ type: "Cardio", duration: 30, date: "2025-05-02" });
+  const [newWorkout, setNewWorkout] = useState({ type: "Cardio", duration: 30, date: new Date().toISOString().slice(0, 10) });
   const [editingWorkout, setEditingWorkout] = useState(null);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
@@ -656,7 +666,7 @@ const WorkoutLogs = ({ workouts, setWorkouts, fetchGoals }) => {
     } catch (err) {
       showToast('Error saving workout', 'error');
     }
-    setNewWorkout({ type: "Cardio", duration: 30, date: "2025-05-02" });
+    setNewWorkout({ type: "Cardio", duration: 30, date: new Date().toISOString().slice(0, 10) });
     setLoading(false);
   };
 
@@ -671,7 +681,7 @@ const WorkoutLogs = ({ workouts, setWorkouts, fetchGoals }) => {
 
   const handleCancelEdit = () => {
     setEditingWorkout(null);
-    setNewWorkout({ type: "Cardio", duration: 30, date: "2025-05-02" });
+    setNewWorkout({ type: "Cardio", duration: 30, date: new Date().toISOString().slice(0, 10) });
   };
 
   const handleDeleteWorkout = async (id) => {
